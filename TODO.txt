@@ -1,0 +1,14 @@
+- Ângulo específico x -> 50m do robo ele calcula onde vai ser o x -> qual configuração tem que estar para pegar
+--Qual a trajetória? -> usando variação linear/variação polinomial/splines --> primeiro rápido e depois lento
+
+spline-> inicial, pontos de controle, final (para cada joint)
+ou
+função polinomial do tempo (com regressão a partir do array de posições) -> angulo_1(t) = p0 + p1*t + p2*t² + ... << para cada angulo x
+
+-> entrada para aprendizado supervisionado (angulos -> pesos)
+
+
+
+linspace -> numpy.linspace
+
+regressão linear -> sklearn.linear_model.LinearRegression
