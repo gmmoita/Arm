@@ -70,7 +70,7 @@ class Simulation(pyglet.window.Window):
         self.step = 0
 
     def set_jps(self):
-        window.jps = get_joint_positions()  # get new joint (x,y) positions
+        self.jps = get_joint_positions()  # get new joint (x,y) positions
 
     def on_draw(self):
         self.clear()
@@ -117,7 +117,7 @@ window = Simulation()
 window.set_jps()
 
 # create an instance of the ball
-ball = Ball.Ball(float(window.width / 2), float(window.height), math.radians(1), yf)
+ball = Ball.Ball(float(window.width / 2), float(window.height), math.radians(-60), yf)
 
 distance = math.hypot((ball.xf - (window.width / 2)), (ball.yf - 0))
 
@@ -132,7 +132,7 @@ label = pyglet.text.Label('Mouse (x,y)', font_name='Times New Roman',
 #initial configuration of the arm
 q0 = arm.q
 #calculate final angles
-qf = arm.inv_kin([ball.xf, ball.yf])
+qf = arm.inv_kin([ball.xf - (window.width / 2), ball.yf])
 #how much each joint need to move each step
 angles_first_joint = np.linspace(q0[0],qf[0],num=total_steps, endpoint=False)
 angles_second_joint = np.linspace(q0[1],qf[1],num=total_steps,  endpoint=False)
