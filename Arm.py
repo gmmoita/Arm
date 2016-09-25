@@ -165,4 +165,3 @@ def test():
     print 'Total number of trials: ', count
     print 'Total error: ', total_error
     print '-------------------------'
-
