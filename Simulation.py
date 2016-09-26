@@ -210,8 +210,8 @@ trajectory_theta1,trajectory_theta2 = calc_steps_mixed(q0,qf)
 
 #print trajectory_theta1,trajectory_theta2
 
-plt.plot(trajectory_theta2)
-plt.show()
+#plt.plot(trajectory_theta2)
+#plt.show()
 
 pesos_first,pesos_second = trajectory_theta1,trajectory_theta2
 
