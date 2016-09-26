@@ -1,14 +1,54 @@
-- Ângulo específico x -> 50m do robo ele calcula onde vai ser o x -> qual configuração tem que estar para pegar
---Qual a trajetória? -> usando variação linear/variação polinomial/splines --> primeiro rápido e depois lento
-
-spline-> inicial, pontos de controle, final (para cada joint)
-ou
-função polinomial do tempo (com regressão a partir do array de posições) -> angulo_1(t) = p0 + p1*t + p2*t² + ... << para cada angulo x
 
 -> entrada para aprendizado supervisionado (angulos -> pesos)
-
-
 
 linspace -> numpy.linspace
 
 regressão linear -> sklearn.linear_model.LinearRegression
+
+primeiro pega varios angulos da bolinha (é o que eu chamo de task) e calcula a trajetoria, e faz regressao linear nessa trajetoria (mapeia tempo pra theta1 e pra theta2). Digamos que essa regressao linear tenha tipo 3 pesos (w0, w1, w2). Entao isso nos dá task1 -> (w0,w1,w2).
+
+Depois, a gente avacalha o braço. Isso sao os "inacc" do codigo (movimento innacurate). Isso é tipo, o braço TENTA seguir uma determinada trajetoria que tu deu, mas ele ta cansado, entao o movimentao nao sai perfeito e ele acaba nao conseguindo pegar a bolinha. Aí a gente tem essa trajetoria errada porque ele ta cansado, e faz regressao nela. Isso nos dá os 3 pesos pra trajetoria errada:
+task1 -> (v0, v1, v2)
+
+Agora nós temos os 3 pesos que descrevem a trajetoria certa pra task1 (w0,w1,w2) e os 3 pesos que descrevem a trajetoria errada pra task1 (v0,v1,v2). Aí eu calculo a diferenca deles, que é o que eu chamo de deltas:
+delta0 = v0-w0
+delta1 = v1-w1
+delta2 = v2-w2
+
+Entao temos 
+task1 -> (delta0, delta1, delta2)
+
+Vamos isso pra N tasks. Ai fazemos regressao nisso. Vai ser um modelo que recebe uma task (angulo da bolinha), e preve a diferença entre os parametros do movimento podre e do movimento correto
+
+porque isso é util? Porque na vida real, podemos estar usando um simulador onde tudo é perfeito e maravilhoso, e o movimento funciona 100%. Mas ai testamos no robo real e ele tem ruido, etc, e acabamos tendo o movimento innacurate. Mas a gente sabe como eles diferem. Entao tendo essa ultima regressao, a gente pode depois pegar o movimento ruim, que nao funciona, e usar a regressao pra prever os deltas que precisamos somar nos parametros desse movimento ruim pra ele virar o movimento bom
+
+essa é a ideia
+resumindo: o learn_model é o negocio que aprende esses deltas
+
+se a trajetoria de angulos é
+
+0.1 0.5 0.7 0.4
+
+o robo recebe
+theta_initial = 0.1
+trajectory_relative_angles = [0 0.4 0.2 -0.3]
+ele nao recebe os angulos pra seguir, e sim quanto somar/subtrair no angulo atual
+aí basicamente multiplica cada um desses valores relativos por 0.7, porque quando ele tenta (p.ex.) aumentar o angulo dele em 0.4, ele na verdade consegue aumentar só em 0.4*0.7=0.28. Ele tá cansado
+
+se tu fizer isso, vai ver que a seq. de angulos relativos quando ele ta cansado sao
+[0 0.28 0.14 -0.21]
+
+Entao se ele começa em 0.1, a trajetoria efetiva quando cansado seria
+0.1
+0.1 + 0.28 = 0.38
+0.38 + 0.14 = 0.52
+0.52 - 0.21 = 0.31
+
+Compara a traj innac 
+[0.1 0.38 0.52 0.31]
+com a accurate:
+[0.1 0.5 0.7 0.4]
+
+dá pra ver que os erros vao se acumulando
+
+porque ele nao consegue alcancar o angulo que deveria chegar num passo, e ai no outro tambem nao consegue, etc, e vai piorando. Se o modelo de friccao fosse 0.7 direto nos angulos (e nao angulos relativos), ele teria um erro constante: sempre ficaria 30% (i.e., 100-70%) errado em relacao ao angulo desejado. Aí o modelo de regressao seria facil: é só pegar as saidas inacc e aumenta-las em 30%

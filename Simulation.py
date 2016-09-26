@@ -184,7 +184,7 @@ window = Simulation()
 window.set_jps()
 
 # create an instance of the ball
-ball = Ball.Ball(float(window.width / 2), float(window.height), math.radians(0), yf)
+ball = Ball.Ball(float(window.width / 2), float(window.height), math.radians(-21), yf)
 
 distance = math.hypot((ball.xf - (window.width / 2)), (ball.yf - 0))
 
@@ -210,8 +210,8 @@ trajectory_theta1,trajectory_theta2 = calc_steps_mixed(q0,qf)
 
 #print trajectory_theta1,trajectory_theta2
 
-#plt.plot(trajectory_theta1)
-#plt.show()
+plt.plot(trajectory_theta2)
+plt.show()
 
 pesos_first,pesos_second = trajectory_theta1,trajectory_theta2
 
