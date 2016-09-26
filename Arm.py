@@ -148,6 +148,7 @@ def test():
             error = np.sqrt((np.array(xy) - np.array(actual_xy)) ** 2)
             # total the error
             total_error += error
+            
 
             # if the error was high, print out more information
             if np.sum(error) > thresh:
