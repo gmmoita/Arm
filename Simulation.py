@@ -1,6 +1,7 @@
 import numpy as np
 import pyglet
 import time
+import sys
 import math
 from sklearn import linear_model
 import matplotlib.pyplot as plt
@@ -24,7 +25,7 @@ def calc_steps_linear(q0,qf):
 def calc_steps_exponential(q0,qf):
     base_traj = 2.0**(np.linspace(0, 1, num=total_steps, endpoint=False))
 
-    print base_traj
+    #print base_traj
 
     normalized_traj = (base_traj - min(base_traj)) / (max(base_traj) - min(base_traj))
     trajectory_theta1 = normalized_traj * (qf[0] - q0[0]) + q0[0]
@@ -43,11 +44,16 @@ def calc_steps_cubic(q0,qf):
 
 
 def calc_steps_sigmoid(q0, qf):
-    temperature = 1.0
-    base_traj = 1. / (1 + math.e**(np.linspace(-1, 0, num=total_steps, endpoint=False))**(-temperature))
+
+    temperature = 5.0
+
+    tmp1 = math.e ** (np.linspace(-1, 1, total_steps))
+    tmp2 = tmp1 ** (-temperature)
+    base_traj = 1. / (1 + tmp2)
 
     normalized_traj = (base_traj - min(base_traj)) / (max(base_traj) - min(base_traj))
-    trajectory_theta1 = normalized_traj * (qf[0] - q0[0]) + q0[0]
+
+    trajectory_theta1 = normalized_traj * (qf[0]- q0[0]) + q0[0]
     trajectory_theta2 = normalized_traj * (qf[1] - q0[1]) + q0[1]
 
     return trajectory_theta1, trajectory_theta2
@@ -98,8 +104,11 @@ def calculate_pesos(first,second):
 
 
 def angles_function(t):
-    first_joint = pesos_first[0] + pesos_first[1] * t + pesos_first[2] * (t**2) + pesos_first[3] * (t**3)
-    second_joint = pesos_second[0] + pesos_second[1] * t + pesos_second[2] * (t**2) + pesos_second[3] * (t**3)
+    #first_joint = pesos_first[0] + pesos_first[1] * t + pesos_first[2] * (t**2) + pesos_first[3] * (t**3)
+    #second_joint = pesos_second[0] + pesos_second[1] * t + pesos_second[2] * (t**2) + pesos_second[3] * (t**3)
+
+    first_joint = pesos_first[t]
+    second_joint = pesos_second[t]
 
     return [first_joint,second_joint,0.0]
 
@@ -155,6 +164,10 @@ class Simulation(pyglet.window.Window):
                                                     ('c3B', (0, 255, 0,
                                                              0, 255, 0)))
 
+        if(self.step == 200):
+            time.sleep(10)
+            sys.exit()
+
     '''def on_mouse_motion(self,x, y, dx, dy):
         # call the inverse kinematics function of the arm
         # to find the joint angles optimal for pointing at
@@ -171,7 +184,7 @@ window = Simulation()
 window.set_jps()
 
 # create an instance of the ball
-ball = Ball.Ball(float(window.width / 2), float(window.height), math.radians(-60), yf)
+ball = Ball.Ball(float(window.width / 2), float(window.height), math.radians(0), yf)
 
 distance = math.hypot((ball.xf - (window.width / 2)), (ball.yf - 0))
 
@@ -191,16 +204,16 @@ qf = arm.inv_kin([ball.xf - (window.width / 2), ball.yf])
 #trajectory_theta1,trajectory_theta2 = calc_steps_linear(q0,qf)
 #trajectory_theta1,trajectory_theta2 = calc_steps_exponential(q0,qf)
 #trajectory_theta1,trajectory_theta2 = calc_steps_cubic(q0,qf)
-trajectory_theta1,trajectory_theta2 = calc_steps_sigmoid(q0,qf)
+#trajectory_theta1,trajectory_theta2 = calc_steps_sigmoid(q0,qf)
 #trajectory_theta1,trajectory_theta2 = calc_steps_bezier(q0,qf)
-#trajectory_theta1,trajectory_theta2 = calc_steps_mixed(q0,qf)
+trajectory_theta1,trajectory_theta2 = calc_steps_mixed(q0,qf)
 
-print trajectory_theta1,trajectory_theta2
+#print trajectory_theta1,trajectory_theta2
 
 #plt.plot(trajectory_theta1)
 #plt.show()
 
-pesos_first,pesos_second = calculate_pesos(trajectory_theta1,trajectory_theta2)
+pesos_first,pesos_second = trajectory_theta1,trajectory_theta2
 
 
 pyglet.app.run()
