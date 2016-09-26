@@ -3,12 +3,67 @@ import pyglet
 import time
 import math
 from sklearn import linear_model
+import matplotlib.pyplot as plt
 
 import Ball
 import Arm
 
 yf = 400.0
 total_steps = 200
+
+def bezier(p, n):
+    t = np.linspace(0, 1, n)
+    return p[0] * (1 - t)**3 + p[1] * (1 - t)**2 * t*3 + p[2] * (1 - t) * (t**2) * 3 + p[3] * (t**3)
+
+def calc_steps_linear(q0,qf):
+    trajectory_theta1 = np.linspace(q0[0], qf[0], num=total_steps, endpoint=False)
+    trajectory_theta2 = np.linspace(q0[1], qf[1], num=total_steps, endpoint=False)
+
+    return trajectory_theta1,trajectory_theta2
+
+def calc_steps_exponential(q0,qf):
+    base_traj = 2.0**(np.linspace(0, 1, num=total_steps, endpoint=False))
+
+    print base_traj
+
+    normalized_traj = (base_traj - min(base_traj)) / (max(base_traj) - min(base_traj))
+    trajectory_theta1 = normalized_traj * (qf[0] - q0[0]) + q0[0]
+    trajectory_theta2 = normalized_traj * (qf[1] - q0[1]) + q0[1]
+
+    return trajectory_theta1,trajectory_theta2
+
+def calc_steps_cubic(q0,qf):
+    base_traj = np.linspace(-1, 0, num=total_steps, endpoint=False) ** 3
+
+    normalized_traj = (base_traj - min(base_traj)) / (max(base_traj) - min(base_traj))
+    trajectory_theta1 = normalized_traj * (qf[0] - q0[0]) + q0[0]
+    trajectory_theta2 = normalized_traj * (qf[1] - q0[1]) + q0[1]
+
+    return trajectory_theta1,trajectory_theta2
+
+
+def calc_steps_sigmoid(q0, qf):
+    temperature = 1.0
+    base_traj = 1. / (1 + math.e**(np.linspace(-1, 0, num=total_steps, endpoint=False))**(-temperature))
+
+    normalized_traj = (base_traj - min(base_traj)) / (max(base_traj) - min(base_traj))
+    trajectory_theta1 = normalized_traj * (qf[0] - q0[0]) + q0[0]
+    trajectory_theta2 = normalized_traj * (qf[1] - q0[1]) + q0[1]
+
+    return trajectory_theta1, trajectory_theta2
+
+def calc_steps_bezier(q0, qf):
+    normalized_traj = bezier([0,0.7,0.3,1], total_steps)
+    trajectory_theta1 = normalized_traj * (qf[0] - q0[0]) + q0[0]
+    trajectory_theta2 = normalized_traj * (qf[1] - q0[1]) + q0[1]
+
+    return trajectory_theta1, trajectory_theta2
+
+def calc_steps_mixed(q0,qf):
+    trajectory_theta1 = calc_steps_bezier(q0,qf)[0]
+    trajectory_theta2 = calc_steps_sigmoid(q0,qf)[1]
+
+    return trajectory_theta1,trajectory_theta2
 
 def get_joint_positions():
     """This method finds the (x,y) coordinates of each joint"""
@@ -54,7 +109,6 @@ def update(dt):
     arm.q = angles_function(window.step)
     window.step = window.step + 1
     window.jps = get_joint_positions()  # get new joint (x,y) positions
-    print window.jps
     ball.update(total_steps)
 
 class Simulation(pyglet.window.Window):
@@ -134,13 +188,19 @@ q0 = arm.q
 #calculate final angles
 qf = arm.inv_kin([ball.xf - (window.width / 2), ball.yf])
 #how much each joint need to move each step
-angles_first_joint = np.linspace(q0[0],qf[0],num=total_steps, endpoint=False)
-angles_second_joint = np.linspace(q0[1],qf[1],num=total_steps,  endpoint=False)
+#trajectory_theta1,trajectory_theta2 = calc_steps_linear(q0,qf)
+#trajectory_theta1,trajectory_theta2 = calc_steps_exponential(q0,qf)
+#trajectory_theta1,trajectory_theta2 = calc_steps_cubic(q0,qf)
+trajectory_theta1,trajectory_theta2 = calc_steps_sigmoid(q0,qf)
+#trajectory_theta1,trajectory_theta2 = calc_steps_bezier(q0,qf)
+#trajectory_theta1,trajectory_theta2 = calc_steps_mixed(q0,qf)
 
-pesos_first,pesos_second = calculate_pesos(angles_first_joint,angles_second_joint)
+print trajectory_theta1,trajectory_theta2
 
-print pesos_first
-print pesos_second
+#plt.plot(trajectory_theta1)
+#plt.show()
+
+pesos_first,pesos_second = calculate_pesos(trajectory_theta1,trajectory_theta2)
 
 
 pyglet.app.run()
