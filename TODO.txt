@@ -1,3 +1,9 @@
+Os prox. passos sao:
+- adaptar simulador pra que o robo receba nao o prox. angulo absoluto que tem que assumir, e sim o quanto o angulo atual tem que mudar (ie funcionar com angulos relativos)
+- aplicar o modelo de friccao na traj. acc de angulos relativos
+- plotar as trajetorias acc e inacc, pra começarmos a pensar em que tipo de regressao conseguiria representa-las
+
+
 
 -> entrada para aprendizado supervisionado (angulos -> pesos)
 
@@ -64,4 +70,16 @@ DEPOIS que fizer isso, ai o passo seguinte seria
 aplicar o modelo de friccao nos angulos relativos
 pra gerar a trajetoria inaccurate
 
-depois de termos isso, aí fazemos regressao na acc e na inacc, pra termos os pesos da acc e da inacc, e podermos calcular o delta destes pesos. Mas isso precisa fazer com calma, porque a gente precisa fazer o plot da traj acc e da inacc e termos certeza que os modelos de regressao que vamos usar para calcular esses pesos estao conseguindo representar as trajetorias bem. Talvez nao dê só pra usar regr. linear com t, t^2, etc. No meu codigo eu usei essa ideia de senos e cossenos e tal. Posso explicar depois. Mas isso vem só depoiss
+depois de termos isso, aí fazemos regressao na acc e na inacc, pra termos os pesos da acc e da inacc, e podermos calcular o delta destes pesos. Mas isso precisa fazer com calma, porque a gente precisa fazer o plot da traj acc e da inacc e termos certeza que os modelos de regressao que vamos usar para calcular esses pesos estao conseguindo representar as trajetorias bem. Talvez nao dê só pra usar regr. linear com t, t^2, etc. No meu codigo eu usei essa ideia de senos e cossenos e tal. Posso explicar depois. Mas isso vem só depois
+
+Aquele problema que tu estava tendo, da regr. linear nao conseguir modelar bem a sigmoide, é exatamente porque a regr. com t e t^2, etc, provavelmente nao é poderosa o suficiente.
+
+a ideia desse outro modelo que eu usei é fazer o seguinte: ao inves do modelo ser
+
+anguloJoint1(t) = w0 + w1*t + w2*t^2
+
+ele vai ser, p.ex., algo tipo
+
+anguloJoint1(t) = w0 + w1*sin(t) + w2*sin(2t) + w3*sin(3t)
+nao lembro se usei senos ou cossenos
+tem que ver no codigo
