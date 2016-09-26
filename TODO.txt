@@ -52,3 +52,14 @@ com a accurate:
 dá pra ver que os erros vao se acumulando
 
 porque ele nao consegue alcancar o angulo que deveria chegar num passo, e ai no outro tambem nao consegue, etc, e vai piorando. Se o modelo de friccao fosse 0.7 direto nos angulos (e nao angulos relativos), ele teria um erro constante: sempre ficaria 30% (i.e., 100-70%) errado em relacao ao angulo desejado. Aí o modelo de regressao seria facil: é só pegar as saidas inacc e aumenta-las em 30%
+
+
+os relativos é trivial. Se teus angulos estao num vetor x, é só subtrair cada angulo no vetor do angulo anterior no vetor
+
+x = [x[i]-x[i-1] for i in range(1,len(x))]
+faz por partes
+pega a trajetoria que tu tem agora e modifica pra ser uma trajetoria relativa
+e adapta o simulador pra que ele possa recebe os deltaAngle que tem que mover cada junta, ao inves do novo angulo absoluto que a junta tem que assumir
+DEPOIS que fizer isso, ai o passo seguinte seria
+aplicar o modelo de friccao nos angulos relativos
+pra gerar a trajetoria inaccurate
