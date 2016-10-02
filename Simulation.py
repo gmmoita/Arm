@@ -1,17 +1,19 @@
+import math
+import sys
+import time
+
 import numpy as np
 import pyglet
-import time
-import sys
-import math
 from sklearn import linear_model
 import matplotlib.pyplot as plt
 import random
 
-import Ball
 import Arm
+import Ball
 
 yf = 400.0
 total_steps = 200
+friction = 0.3 #value between 0 and 1
 
 def bezier(p, n):
     t = np.linspace(0, 1, n)
@@ -211,7 +213,7 @@ window = Simulation()
 window.set_jps()
 
 # create an instance of the ball
-ball = Ball.Ball(float(window.width / 2), float(window.height), math.radians(-60), yf)
+ball = Ball.Ball(float(window.width / 2), float(window.height), math.radians(45), yf)
 
 distance = math.hypot((ball.xf - (window.width / 2)), (ball.yf - 0))
 
@@ -242,7 +244,13 @@ trajectory_theta1,trajectory_theta2 = calc_steps_mixed(q0,qf)
 
 pesos_first,pesos_second = convert_deltas(trajectory_theta1),convert_deltas(trajectory_theta2)
 
-#plt.plot(pesos_second[1:])
+#friction
+pesos_first = pesos_first[0:1] + [p*(1.0 - friction) for p in pesos_first[1:]]
+pesos_second = pesos_second[0:1] + [p*(1.0 - friction) for p in pesos_second[1:]]
+
+print pesos_first
+
+#plt.plot(pesos_first[1:])
 #plt.show()
 
 

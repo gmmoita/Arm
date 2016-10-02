@@ -19,7 +19,7 @@ class Ball:
         self.deltay = self.yf - self.y0
 
     def update(self, n_passos):
-        self.x = self.x + (self.deltax / n_passos)
+        self.x += self.deltax / n_passos
         self.y = self.y + (self.deltay / n_passos)
 
 
