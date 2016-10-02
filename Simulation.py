@@ -5,6 +5,7 @@ import sys
 import math
 from sklearn import linear_model
 import matplotlib.pyplot as plt
+import random
 
 import Ball
 import Arm
@@ -71,6 +72,18 @@ def calc_steps_mixed(q0,qf):
 
     return trajectory_theta1,trajectory_theta2
 
+def convert_deltas(v):
+    deltas = []
+    deltas.append(v[0])
+
+    for i in range(1,len(v)):
+        deltas.append(v[i]-v[i-1])
+
+    #print v
+    #print deltas
+
+    return deltas
+
 def get_joint_positions():
     """This method finds the (x,y) coordinates of each joint"""
 
@@ -104,13 +117,17 @@ def calculate_pesos(first,second):
 
 
 def angles_function(t):
-    #first_joint = pesos_first[0] + pesos_first[1] * t + pesos_first[2] * (t**2) + pesos_first[3] * (t**3)
-    #second_joint = pesos_second[0] + pesos_second[1] * t + pesos_second[2] * (t**2) + pesos_second[3] * (t**3)
 
-    first_joint = pesos_first[t]
-    second_joint = pesos_second[t]
+    #array of angles
+    #first_joint = pesos_first[t]
+    #second_joint = pesos_second[t]
+    #return [first_joint,second_joint,0.0]
 
-    return [first_joint,second_joint,0.0]
+    #array of deltas
+    window.last_first = window.last_first + pesos_first[t]
+    window.last_second = window.last_second + pesos_second[t]
+
+    return [window.last_first,window.last_second,0.0]
 
 
 def update(dt):
@@ -118,6 +135,7 @@ def update(dt):
     arm.q = angles_function(window.step)
     window.step = window.step + 1
     window.jps = get_joint_positions()  # get new joint (x,y) positions
+    label.text = 'ball = (%.3f, %.3f)' % (ball.x, ball.y)
     ball.update(total_steps)
 
 class Simulation(pyglet.window.Window):
@@ -132,16 +150,21 @@ class Simulation(pyglet.window.Window):
 
         self.step = 0
 
+        self.last_first = 0.0
+        self.last_second = 0.0
+
     def set_jps(self):
         self.jps = get_joint_positions()  # get new joint (x,y) positions
 
     def on_draw(self):
         self.clear()
+        if(self.step == 200):
+            arm_xy = arm.get_xy(arm.q)
+            arm_xy = (arm_xy[0] + (window.width / 2), arm_xy[1])
+            ball_xy = [ball.xf,ball.yf]
+            error = np.sqrt((np.array(ball_xy) - np.array(arm_xy)) ** 2)
+            print error
         label.draw()
-        for i in range(3):
-            pyglet.graphics.draw(2, pyglet.gl.GL_LINES, ('v2i',
-                                                         (self.jps[0][i], self.jps[1][i],
-                                                          self.jps[0][i + 1], self.jps[1][i + 1])))
         pyglet.graphics.draw(4, pyglet.gl.GL_QUADS,
                                ('v2f', (ball.x - 10, ball.y - 10,
                                         ball.x + 10, ball.y - 10,
@@ -163,6 +186,10 @@ class Simulation(pyglet.window.Window):
                                                       ball.xf, ball.yf)),
                                                     ('c3B', (0, 255, 0,
                                                              0, 255, 0)))
+        for i in range(3):
+            pyglet.graphics.draw(2, pyglet.gl.GL_LINES, ('v2i',
+                                                         (self.jps[0][i], self.jps[1][i],
+                                                          self.jps[0][i + 1], self.jps[1][i + 1])))
 
         if(self.step == 200):
             time.sleep(10)
@@ -184,7 +211,7 @@ window = Simulation()
 window.set_jps()
 
 # create an instance of the ball
-ball = Ball.Ball(float(window.width / 2), float(window.height), math.radians(-21), yf)
+ball = Ball.Ball(float(window.width / 2), float(window.height), math.radians(-60), yf)
 
 distance = math.hypot((ball.xf - (window.width / 2)), (ball.yf - 0))
 
@@ -213,7 +240,10 @@ trajectory_theta1,trajectory_theta2 = calc_steps_mixed(q0,qf)
 #plt.plot(trajectory_theta2)
 #plt.show()
 
-pesos_first,pesos_second = trajectory_theta1,trajectory_theta2
+pesos_first,pesos_second = convert_deltas(trajectory_theta1),convert_deltas(trajectory_theta2)
+
+#plt.plot(pesos_second[1:])
+#plt.show()
 
 
 pyglet.app.run()
