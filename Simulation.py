@@ -160,7 +160,7 @@ class Simulation(pyglet.window.Window):
 
     def on_draw(self):
         self.clear()
-        if(self.step == 200):
+        if(self.step == 199):
             arm_xy = arm.get_xy(arm.q)
             arm_xy = (arm_xy[0] + (window.width / 2), arm_xy[1])
             ball_xy = [ball.xf,ball.yf]
@@ -193,7 +193,7 @@ class Simulation(pyglet.window.Window):
                                                          (self.jps[0][i], self.jps[1][i],
                                                           self.jps[0][i + 1], self.jps[1][i + 1])))
 
-        if(self.step == 200):
+        if(self.step == 199):
             time.sleep(10)
             sys.exit()
 
@@ -244,13 +244,16 @@ trajectory_theta1,trajectory_theta2 = calc_steps_mixed(q0,qf)
 
 pesos_first,pesos_second = convert_deltas(trajectory_theta1),convert_deltas(trajectory_theta2)
 
+window.last_first = pesos_first[0]
+window.last_second = pesos_second[0]
+
 #friction
-pesos_first = pesos_first[0:1] + [p*(1.0 - friction) for p in pesos_first[1:]]
-pesos_second = pesos_second[0:1] + [p*(1.0 - friction) for p in pesos_second[1:]]
+pesos_first = [p*(1.0 - friction) for p in pesos_first[1:]]
+pesos_second = [p*(1.0 - friction) for p in pesos_second[1:]]
 
-print pesos_first
+#print pesos_first
 
-#plt.plot(pesos_first[1:])
+#plt.plot(pesos_first)
 #plt.show()
 
 
