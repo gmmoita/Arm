@@ -277,7 +277,8 @@ print pesos_second/pesos_without_friction_second
 
 x2 = np.linspace(0,200) # 100 linearly spaced numbers
 y2 = pesos_second[0] + pesos_second[1] * np.sin(pi*x2/200) + pesos_second[2] * np.sin(pi*x2*2/200) + pesos_second[3] * np.sin(pi*x2*3/200)
-plt.plot(x2,y2)
+plt.plot(x2,y2
+         
 #plt.show()
 
 
