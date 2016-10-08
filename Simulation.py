@@ -14,6 +14,7 @@ import Ball
 yf = 400.0
 total_steps = 200
 friction = 0.3 #value between 0 and 1
+pi = math.pi
 
 def bezier(p, n):
     t = np.linspace(0, 1, n)
@@ -107,10 +108,10 @@ def calculate_pesos(first,second):
     regr_first = linear_model.LinearRegression(fit_intercept=False)
     regr_second = linear_model.LinearRegression(fit_intercept=False)
 
-    steps_matrix = np.matrix([[1 for t in range(total_steps)],
-                              [t for t in range(total_steps)],
-                              [(t**2) for t in range(total_steps)],
-                              [(t**3) for t in range(total_steps)]]).T
+    steps_matrix = np.matrix([[1 for t in range(total_steps-1)],
+                              [np.sin(pi*t/200) for t in range(total_steps-1)],
+                              [np.sin(pi*t*2/200) for t in range(total_steps-1)],
+                              [np.sin(pi*t*3/200) for t in range(total_steps-1)]]).T
 
     regr_first.fit(steps_matrix,first)
     regr_second.fit(steps_matrix,second)
@@ -126,8 +127,13 @@ def angles_function(t):
     #return [first_joint,second_joint,0.0]
 
     #array of deltas
-    window.last_first = window.last_first + pesos_first[t]
-    window.last_second = window.last_second + pesos_second[t]
+    #window.last_first = window.last_first + pesos_first[t]
+    #window.last_second = window.last_second + pesos_second[t]
+    #return [window.last_first,window.last_second,0.0]
+
+    #with regression
+    window.last_first = window.last_first + pesos_first[0] + pesos_first[1] * np.sin(pi*t/200) + pesos_first[2] * np.sin(pi*t*2/200) + pesos_first[3] * np.sin(pi*t*3/200)
+    window.last_second =  window.last_second + pesos_second[0] + pesos_second[1] * np.sin(pi*t/200) + pesos_second[2] * np.sin(pi*t*2/200) + pesos_second[3] * np.sin(pi*t*3/200)
 
     return [window.last_first,window.last_second,0.0]
 
@@ -213,7 +219,7 @@ window = Simulation()
 window.set_jps()
 
 # create an instance of the ball
-ball = Ball.Ball(float(window.width / 2), float(window.height), math.radians(45), yf)
+ball = Ball.Ball(float(window.width / 2), float(window.height), math.radians(-60), yf)
 
 distance = math.hypot((ball.xf - (window.width / 2)), (ball.yf - 0))
 
@@ -247,14 +253,32 @@ pesos_first,pesos_second = convert_deltas(trajectory_theta1),convert_deltas(traj
 window.last_first = pesos_first[0]
 window.last_second = pesos_second[0]
 
+pesos_without_friction_first,pesos_without_friction_second = calculate_pesos(pesos_first[1:],pesos_second[1:])
+
+plt.plot(pesos_second[1:])
+
+x1 = np.linspace(0,200) # 100 linearly spaced numbers
+y1 = pesos_without_friction_second[0] + pesos_without_friction_second[1] * np.sin(pi*x1/200) \
+     + pesos_without_friction_second[2] * np.sin(pi*x1*2/200) \
+     + pesos_without_friction_second[3] * np.sin(pi*x1*3/200)
+plt.plot(x1,y1)
+
 #friction
 pesos_first = [p*(1.0 - friction) for p in pesos_first[1:]]
 pesos_second = [p*(1.0 - friction) for p in pesos_second[1:]]
 
 #print pesos_first
+plt.plot(pesos_second)
 
-#plt.plot(pesos_first)
+pesos_first,pesos_second = calculate_pesos(pesos_first,pesos_second)
+
+print pesos_first/pesos_without_friction_first
+print pesos_second/pesos_without_friction_second
+
+x2 = np.linspace(0,200) # 100 linearly spaced numbers
+y2 = pesos_second[0] + pesos_second[1] * np.sin(pi*x2/200) + pesos_second[2] * np.sin(pi*x2*2/200) + pesos_second[3] * np.sin(pi*x2*3/200)
+plt.plot(x2,y2)
 #plt.show()
 
 
-pyglet.app.run()
+#pyglet.app.run()
