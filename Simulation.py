@@ -248,6 +248,8 @@ trajectory_theta1,trajectory_theta2 = calc_steps_mixed(q0,qf)
 #plt.plot(trajectory_theta2)
 #plt.show()
 
+pesos_trajectory_without_friction_first,pesos_trajectory_without_friction_second = calculate_pesos(trajectory_theta1[1:],trajectory_theta2[1:])
+
 pesos_first,pesos_second = convert_deltas(trajectory_theta1),convert_deltas(trajectory_theta2)
 
 window.last_first = pesos_first[0]
@@ -255,31 +257,59 @@ window.last_second = pesos_second[0]
 
 pesos_without_friction_first,pesos_without_friction_second = calculate_pesos(pesos_first[1:],pesos_second[1:])
 
-plt.plot(pesos_second[1:])
+#plt.plot(pesos_second[1:])
 
-x1 = np.linspace(0,200) # 100 linearly spaced numbers
+x1 = np.linspace(0,200)
 y1 = pesos_without_friction_second[0] + pesos_without_friction_second[1] * np.sin(pi*x1/200) \
      + pesos_without_friction_second[2] * np.sin(pi*x1*2/200) \
      + pesos_without_friction_second[3] * np.sin(pi*x1*3/200)
-plt.plot(x1,y1)
+#plt.plot(x1,y1)
 
 #friction
 pesos_first = [p*(1.0 - friction) for p in pesos_first[1:]]
 pesos_second = [p*(1.0 - friction) for p in pesos_second[1:]]
 
 #print pesos_first
-plt.plot(pesos_second)
+#plt.plot(pesos_second)
 
 pesos_first,pesos_second = calculate_pesos(pesos_first,pesos_second)
 
-print pesos_first/pesos_without_friction_first
-print pesos_second/pesos_without_friction_second
+#print pesos_first/pesos_without_friction_first
+#print pesos_second/pesos_without_friction_second
 
-x2 = np.linspace(0,200) # 100 linearly spaced numbers
+x2 = np.linspace(0,200)
 y2 = pesos_second[0] + pesos_second[1] * np.sin(pi*x2/200) + pesos_second[2] * np.sin(pi*x2*2/200) + pesos_second[3] * np.sin(pi*x2*3/200)
-plt.plot(x2,y2)
+#plt.plot(x2,y2)
 
-#plt.show()
+acc1 = window.last_first
+acc2 = window.last_second
+trajectory_theta1_friction = [acc1]
+trajectory_theta2_friction = [acc2]
+for t in range(1,total_steps-1):
+    acc1 += pesos_first[0] + pesos_first[1] * np.sin(pi * t / 200) + pesos_first[2] * np.sin(pi * t * 2 / 200) + pesos_first[3] * np.sin(pi * t * 3 / 200)
+    acc2 += pesos_second[0] + pesos_second[1] * np.sin(pi*t/200) + pesos_second[2] * np.sin(pi*t*2/200) + pesos_second[3] * np.sin(pi*t*3/200)
+    trajectory_theta1_friction.append(acc1)
+    trajectory_theta2_friction.append(acc2)
+
+pesos_trajectory_with_friction_first,pesos_trajectory_with_friction_second = calculate_pesos(trajectory_theta1_friction,trajectory_theta2_friction)
+
+print pesos_trajectory_with_friction_first-pesos_trajectory_without_friction_first
+print pesos_trajectory_with_friction_second-pesos_trajectory_without_friction_second
+
+x3 = np.linspace(0,200)
+y3 = pesos_trajectory_with_friction_first[0] + pesos_trajectory_with_friction_first[1] * np.sin(pi*x3/200) + \
+     pesos_trajectory_with_friction_first[2] * np.sin(pi*x3*2/200) + pesos_trajectory_with_friction_first[3] * np.sin(pi*x3*3/200)
+y4 = pesos_trajectory_without_friction_first[0] + pesos_trajectory_without_friction_first[1] * np.sin(pi*x3/200) + \
+     pesos_trajectory_without_friction_first[2] * np.sin(pi*x3*2/200) + pesos_trajectory_without_friction_first[3] * np.sin(pi*x3*3/200)
+
+plt.plot(x3,y3)
+plt.plot(x3,y4)
+plt.plot(x3,y3+y4)
+
+#plt.plot(trajectory_theta2)
+#plt.plot(trajectory_theta2_friction)
+
+plt.show()
 
 
 #pyglet.app.run()
