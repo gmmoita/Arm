@@ -129,10 +129,19 @@ def calculate_pesos_angles(first,second):
     regr_first = linear_model.LinearRegression(fit_intercept=False)
     regr_second = linear_model.LinearRegression(fit_intercept=False)
 
-    steps_matrix = np.matrix([[1 for angle in angles],
-                              [np.sin(pi*normalize(angle,-65,65,0,1)) for angle in angles],
-                              [np.sin(pi*normalize(angle,-65,65,0,1)*2) for angle in angles],
-                              [np.sin(pi*normalize(angle,-65,65,0,1)*3) for angle in angles]]).T
+    steps_matrix = np.matrix([
+                              [1 for angle in angles],
+                              [np.sin(pi * normalize(angle, -65, 65, 0, 1)) for angle in angles],
+                              [np.cos(pi * normalize(angle, -65, 65, 0, 1)) for angle in angles],
+                              [np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) for angle in angles],
+                              [np.cos(pi * normalize(angle, -65, 65, 0, 1) * 2) for angle in angles],
+                              [np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3) for angle in angles],
+                              [np.cos(pi * normalize(angle, -65, 65, 0, 1) * 3) for angle in angles],
+                              [np.sin(pi * normalize(angle, -65, 65, 0, 1) * 4) for angle in angles],
+                              [np.cos(pi * normalize(angle, -65, 65, 0, 1) * 4) for angle in angles],
+                              [np.sin(pi * normalize(angle, -65, 65, 0, 1) * 5) for angle in angles],
+                              [np.cos(pi * normalize(angle, -65, 65, 0, 1) * 5) for angle in angles],
+                             ]).T
 
     regr_first.fit(steps_matrix,first)
     regr_second.fit(steps_matrix,second)
@@ -405,7 +414,6 @@ for i in range(0,4):
     predicted_weights_trajectory_friction_joint1.append(a)
     predicted_weights_trajectory_friction_joint2.append(b)
 
-
 predicted_values_trajectory_normal_joint1 = []
 predicted_values_trajectory_normal_joint2 = []
 predicted_values_trajectory_friction_joint1 = []
@@ -419,9 +427,16 @@ for i in range(0,4):
     b = []
     for angle in angles:
         a = predicted_weights_deltas_normal_joint1[i][0] + \
-            predicted_weights_deltas_normal_joint1[i][1] * np.sin(pi*normalize(angle,-65,65,0,1)) + \
-            predicted_weights_deltas_normal_joint1[i][2] * np.sin(pi*normalize(angle,-65,65,0,1)*2) + \
-            predicted_weights_deltas_normal_joint1[i][3] * np.sin(pi*normalize(angle,-65,65,0,1)*3)
+            predicted_weights_deltas_normal_joint1[i][1] * np.sin(pi * normalize(angle, -65, 65, 0, 1)) + \
+            predicted_weights_deltas_normal_joint1[i][2] * np.cos(pi * normalize(angle, -65, 65, 0, 1)) + \
+            predicted_weights_deltas_normal_joint1[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_deltas_normal_joint1[i][4] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_deltas_normal_joint1[i][5] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3) + \
+            predicted_weights_deltas_normal_joint1[i][6] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 3) + \
+            predicted_weights_deltas_normal_joint1[i][7] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 4) + \
+            predicted_weights_deltas_normal_joint1[i][8] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 4) + \
+            predicted_weights_deltas_normal_joint1[i][9] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 5) + \
+            predicted_weights_deltas_normal_joint1[i][10] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 5)
         b.append(a)
     predicted_values_deltas_normal_joint1.append(b)
 
@@ -429,8 +444,15 @@ for i in range(0,4):
     for angle in angles:
         a = predicted_weights_deltas_normal_joint2[i][0] + \
             predicted_weights_deltas_normal_joint2[i][1] * np.sin(pi * normalize(angle, -65, 65, 0, 1)) + \
-            predicted_weights_deltas_normal_joint2[i][2] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
-            predicted_weights_deltas_normal_joint2[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3)
+            predicted_weights_deltas_normal_joint2[i][2] * np.cos(pi * normalize(angle, -65, 65, 0, 1)) + \
+            predicted_weights_deltas_normal_joint2[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_deltas_normal_joint2[i][4] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_deltas_normal_joint2[i][5] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3) + \
+            predicted_weights_deltas_normal_joint2[i][6] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 3) + \
+            predicted_weights_deltas_normal_joint2[i][7] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 4) + \
+            predicted_weights_deltas_normal_joint2[i][8] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 4) + \
+            predicted_weights_deltas_normal_joint2[i][9] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 5) + \
+            predicted_weights_deltas_normal_joint2[i][10] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 5)
         b.append(a)
     predicted_values_deltas_normal_joint2.append(b)
 
@@ -438,8 +460,15 @@ for i in range(0,4):
     for angle in angles:
         a = predicted_weights_deltas_friction_joint1[i][0] + \
             predicted_weights_deltas_friction_joint1[i][1] * np.sin(pi * normalize(angle, -65, 65, 0, 1)) + \
-            predicted_weights_deltas_friction_joint1[i][2] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
-            predicted_weights_deltas_friction_joint1[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3)
+            predicted_weights_deltas_friction_joint1[i][2] * np.cos(pi * normalize(angle, -65, 65, 0, 1)) + \
+            predicted_weights_deltas_friction_joint1[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_deltas_friction_joint1[i][4] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_deltas_friction_joint1[i][5] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3) + \
+            predicted_weights_deltas_friction_joint1[i][6] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 3) + \
+            predicted_weights_deltas_friction_joint1[i][7] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 4) + \
+            predicted_weights_deltas_friction_joint1[i][8] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 4) + \
+            predicted_weights_deltas_friction_joint1[i][9] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 5) + \
+            predicted_weights_deltas_friction_joint1[i][10] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 5)
         b.append(a)
     predicted_values_deltas_friction_joint1.append(b)
 
@@ -447,8 +476,15 @@ for i in range(0,4):
     for angle in angles:
         a = predicted_weights_deltas_friction_joint2[i][0] + \
             predicted_weights_deltas_friction_joint2[i][1] * np.sin(pi * normalize(angle, -65, 65, 0, 1)) + \
-            predicted_weights_deltas_friction_joint2[i][2] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
-            predicted_weights_deltas_friction_joint2[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3)
+            predicted_weights_deltas_friction_joint2[i][2] * np.cos(pi * normalize(angle, -65, 65, 0, 1)) + \
+            predicted_weights_deltas_friction_joint2[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_deltas_friction_joint2[i][4] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_deltas_friction_joint2[i][5] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3) + \
+            predicted_weights_deltas_friction_joint2[i][6] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 3) + \
+            predicted_weights_deltas_friction_joint2[i][7] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 4) + \
+            predicted_weights_deltas_friction_joint2[i][8] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 4) + \
+            predicted_weights_deltas_friction_joint2[i][9] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 5) + \
+            predicted_weights_deltas_friction_joint2[i][10] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 5)
         b.append(a)
     predicted_values_deltas_friction_joint2.append(b)
 
@@ -456,8 +492,15 @@ for i in range(0,4):
     for angle in angles:
         a = predicted_weights_trajectory_normal_joint1[i][0] + \
             predicted_weights_trajectory_normal_joint1[i][1] * np.sin(pi * normalize(angle, -65, 65, 0, 1)) + \
-            predicted_weights_trajectory_normal_joint1[i][2] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
-            predicted_weights_trajectory_normal_joint1[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3)
+            predicted_weights_trajectory_normal_joint1[i][2] * np.cos(pi * normalize(angle, -65, 65, 0, 1)) + \
+            predicted_weights_trajectory_normal_joint1[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_trajectory_normal_joint1[i][4] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_trajectory_normal_joint1[i][5] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3) + \
+            predicted_weights_trajectory_normal_joint1[i][6] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 3) + \
+            predicted_weights_trajectory_normal_joint1[i][7] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 4) + \
+            predicted_weights_trajectory_normal_joint1[i][8] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 4) + \
+            predicted_weights_trajectory_normal_joint1[i][9] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 5) + \
+            predicted_weights_trajectory_normal_joint1[i][10] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 5)
         b.append(a)
     predicted_values_trajectory_normal_joint1.append(b)
 
@@ -465,8 +508,15 @@ for i in range(0,4):
     for angle in angles:
         a = predicted_weights_trajectory_normal_joint2[i][0] + \
             predicted_weights_trajectory_normal_joint2[i][1] * np.sin(pi * normalize(angle, -65, 65, 0, 1)) + \
-            predicted_weights_trajectory_normal_joint2[i][2] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
-            predicted_weights_trajectory_normal_joint2[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3)
+            predicted_weights_trajectory_normal_joint2[i][2] * np.cos(pi * normalize(angle, -65, 65, 0, 1)) + \
+            predicted_weights_trajectory_normal_joint2[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_trajectory_normal_joint2[i][4] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_trajectory_normal_joint2[i][5] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3) + \
+            predicted_weights_trajectory_normal_joint2[i][6] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 3) + \
+            predicted_weights_trajectory_normal_joint2[i][7] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 4) + \
+            predicted_weights_trajectory_normal_joint2[i][8] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 4) + \
+            predicted_weights_trajectory_normal_joint2[i][9] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 5) + \
+            predicted_weights_trajectory_normal_joint2[i][10] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 5)
         b.append(a)
     predicted_values_trajectory_normal_joint2.append(b)
 
@@ -474,8 +524,15 @@ for i in range(0,4):
     for angle in angles:
         a = predicted_weights_trajectory_friction_joint1[i][0] + \
             predicted_weights_trajectory_friction_joint1[i][1] * np.sin(pi * normalize(angle, -65, 65, 0, 1)) + \
-            predicted_weights_trajectory_friction_joint1[i][2] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
-            predicted_weights_trajectory_friction_joint1[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3)
+            predicted_weights_trajectory_friction_joint1[i][2] * np.cos(pi * normalize(angle, -65, 65, 0, 1)) + \
+            predicted_weights_trajectory_friction_joint1[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_trajectory_friction_joint1[i][4] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_trajectory_friction_joint1[i][5] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3) + \
+            predicted_weights_trajectory_friction_joint1[i][6] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 3) + \
+            predicted_weights_trajectory_friction_joint1[i][7] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 4) + \
+            predicted_weights_trajectory_friction_joint1[i][8] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 4) + \
+            predicted_weights_trajectory_friction_joint1[i][9] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 5) + \
+            predicted_weights_trajectory_friction_joint1[i][10] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 5)
         b.append(a)
     predicted_values_trajectory_friction_joint1.append(b)
 
@@ -483,8 +540,15 @@ for i in range(0,4):
     for angle in angles:
         a = predicted_weights_trajectory_friction_joint2[i][0] + \
             predicted_weights_trajectory_friction_joint2[i][1] * np.sin(pi * normalize(angle, -65, 65, 0, 1)) + \
-            predicted_weights_trajectory_friction_joint2[i][2] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
-            predicted_weights_trajectory_friction_joint2[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3)
+            predicted_weights_trajectory_friction_joint2[i][2] * np.cos(pi * normalize(angle, -65, 65, 0, 1)) + \
+            predicted_weights_trajectory_friction_joint2[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_trajectory_friction_joint2[i][4] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_trajectory_friction_joint2[i][5] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3) + \
+            predicted_weights_trajectory_friction_joint2[i][6] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 3) + \
+            predicted_weights_trajectory_friction_joint2[i][7] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 4) + \
+            predicted_weights_trajectory_friction_joint2[i][8] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 4) + \
+            predicted_weights_trajectory_friction_joint2[i][9] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 5) + \
+            predicted_weights_trajectory_friction_joint2[i][10] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 5)
         b.append(a)
     predicted_values_trajectory_friction_joint2.append(b)
 
