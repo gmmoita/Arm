@@ -1,85 +1,70 @@
-Os prox. passos sao:
-- adaptar simulador pra que o robo receba nao o prox. angulo absoluto que tem que assumir, e sim o quanto o angulo atual tem que mudar (ie funcionar com angulos relativos)
-- aplicar o modelo de friccao na traj. acc de angulos relativos
-- plotar as trajetorias acc e inacc, pra começarmos a pensar em que tipo de regressao conseguiria representa-las
+Próximos passos:
+- Aumentar regressão tempo->angulos para 6 features (a.k.a. adicionar cossenos)
+ (w0 + w1 * sin(pi*t/200) + w2 * cos(pi*t/200) + w3 * sin(2*pi*t/200) + w4 * cos(2*pi*t/200) + w5 * sin(3*pi*t/200) + w6 * cos(3*pi*t/200))
+
+-- A "Primeira regressão" a ser utilizada daqui pra frente é apenas a "f(step) -> angulo imediato"
+
+- Gerar datasets (para cada w) de delta-w:
+{angulo, delta=(w0_semFadiga - w0_fadiga) }
+
+No 1o caso, a gente poderia entao usar o simulador imperfeito para rapidamente estimar os pesos de uma trajetoria (que seria imperfeita). Aí bastaria, para corrigi-los, somar o delta previsto pelo regressao do peso correspondente:
+wi_corrigido = wi_imperfeito + delta_previsto_pela_regressao
+
+- Gerar datasets (para cada w) de ratio-w:
+{angulo, delta=(w0_semFadiga/w0_fadiga) }
+
+No 2o caso, a gente poderia usar o simulador imperfeito para rapidamente estimar os pesos de uma trajetoria (que seria imperfeita). Aí bastaria, para corrigi-los, multiplicar delta previsto pelo regressao do peso correspondente:
+wi_corrigido = wi_imperfeito * delta_previsto_pela_regressao
+
+- Simulador em si deve voltar a funcionar com ângulos diretos ao invés de somando deltas (mas manter um comando para fazer com que ele funcione com deltas, para uso futuro)
+
+Terminologia:
+
+Vamos falar em
+angulo-otimo
+delta-angle
+delta-w
+ratio-w
+A 1a regressao vai ser de
+step -> anguloSemFriccao
+pro caso sem friccao.
+Ela vai ser dar pesos wi_SemFriccao
+e
+step -> anguloFriccao
+pro caso com friccao,
+onde anguloFriccao é obtido pegando o anguloSemFriccao, calculando delta-angles, aplicando a fadiga, e integrando os delta-angles
+Ela vai ser dar pesos wi_ComFriccao
+A 2a regressao vai ser
+regressao_i:
+angulo -> (wi_SemFriccao-wi_ComFriccao)
+para cada um dos pesos.
+Isso no caso em que a 2a regressao implementa predicao de delta-w. No caso de ela implementa predicao de ratio-w, ela vai ser
+regressao_i:
+angulo -> (wi_SemFriccao/wi_ComFriccao)
+
+sim, fazendo como na mensagem acima, ele vai funcioanr com angulos diretos. A minha sugestao é manter os 2 comandos pro robo: um comando de moveToGivenAngle, e moveAngleByGivenAmount ou algo assim. Aí alternar entre comandos que dao angulos diretamente, ou delta-angles, é trivial
 
 
+Explicação:
 
--> entrada para aprendizado supervisionado (angulos -> pesos)
+a idéia é a seguinte:
+- a gente aprende pra N angulos diferentes: pesos com fatiga, que geram um movimento sub-optimo; pesos otimos, que geram o movimento correto. A história por tras disso é que em varias situacoes a gente pode aprender rapidamente uma solucao/trajetoria, usando um simulador que é imperfeito mas rapido de usar, mas aí quando rodamos ela no robô real (que pode ter fadiga e ruido) ela nao roda super bem. Essa trajetoria, que nao roda super bem, é a nossa com fadiga. Nós poderiamos entao usar algum metodo de busca local para partir dessa trajetoria sub-optima e ir melhorando ela, até ela ficar otima: isso nos daria uma trajetoria "limpa"/otimo, que consegue pegar a bolinha. Nesses experimentos, nós estamos gerando os dados no sentido inverso (partimos da trajetoria limpa/otima ir geramos a trajetoria com fadiga), mas só fazemos assim porque é mais facil de fazer dessa forma: se quisessemos, a gente poderia facilmente partir da trajetoria com fadiga e rodar algum metodo, tipo hill climbing, pra partir dela e chegar nos pesos que pegam a bolinha de maneira perfeita. Isso nos daria exatamente os mesmos pesos que a gente tem agora, pra trajetoria "limpa"/otima, mas com um custo computacional mais alto. Enfim. A idéia é que temos, pra N angulos, a trajetoria imperfeita (mas rapida de calcular) e a trajetoria corrigida. Essas correspondem, no nosso dataset, às trajetorias com fadiga e sem fadiga, respectivamente
+- A gente quer que aprender a pegar uma trajetoria imperfeita e rapidamente prever como corrigi-la, de forma que ela fique perfeita/otima, mas sem ter que usar metodos de busca local (que podem ser demorados). Para isso, iremos pegar os pesos da trajetoria imperfeita e usar regressao para prever que tipo de modificacao precisamos fazer nesses pesos, a fim de obter os pesos da trajetoria perfeita/otima
+- nós podemos fazer várias hipoteses de que tipo de correcao deve ser feita nos pesos. A 1a hipotese é que basta somar um delta em cada peso: isso significa que a regressao iria prever o que eu chamo de delta-w. A 2a hipotese é que precisamos prever um valor para multiplicar cada peso: isso significa que a regressao iria prever o que eu chamo de ratio-w.
+Para a 1a hipotese, o dataset consistiria de pares de
+{angulo, delta=(w0_semFadiga - w0_fadiga) }
+Para a 2a hipotese, o dataset consistiria de pares de
+{angulo, delta=(w0_semFadiga/w0_fadiga) }
+No 1o caso, a gente poderia entao usar o simulador imperfeito para rapidamente estimar os pesos de uma trajetoria (que seria imperfeita). Aí bastaria, para corrigi-los, somar o delta previsto pelo regressao do peso correspondente:
+wi_corrigido = wi_imperfeito + delta_previsto_pela_regressao
+No 2o caso, a gente poderia usar o simulador imperfeito para rapidamente estimar os pesos de uma trajetoria (que seria imperfeita). Aí bastaria, para corrigi-los, multiplicar delta previsto pelo regressao do peso correspondente:
+wi_corrigido = wi_imperfeito * delta_previsto_pela_regressao
+Acho que foi isso que tu explicou, tambem, mas só queria dar um pouco mais de detalhes para explicar a motivacao por tras da maneira como estamos gerando os dados
 
-linspace -> numpy.linspace
+sim, ele está aprendendo a corrigir pra um tipo de imperfeicao do robo. Caso o robo de repente passe a ter caracteristicas fisicas diferentes (o atrito nas juntas aumenta duma hora pra outra), nossas predicoes iriam falhar
 
-regressão linear -> sklearn.linear_model.LinearRegression
+Mas isso é ok. Normalmente as caracteristicas do robo sao mais ou menos estaveis. O que é mais critico é que as solucoes calculadas em simulacao sao consistentemente diferentes das solucoes que realmente funcionam no robo—mas elas normalemnte diferem de uma maneira de nao é aleatoria; ou seja, que tem como ser prevista.
 
-primeiro pega varios angulos da bolinha (é o que eu chamo de task) e calcula a trajetoria, e faz regressao linear nessa trajetoria (mapeia tempo pra theta1 e pra theta2). Digamos que essa regressao linear tenha tipo 3 pesos (w0, w1, w2). Entao isso nos dá task1 -> (w0,w1,w2).
+Mas isso é ok. Normalmente as caracteristicas do robo sao mais ou menos estaveis. O que é mais critico é que as solucoes calculadas em simulacao sao consistentemente diferentes das solucoes que realmente funcionam no robo—mas elas normalemnte diferem de uma maneira de nao é aleatoria; ou seja, que tem como ser prevista.
 
-Depois, a gente avacalha o braço. Isso sao os "inacc" do codigo (movimento innacurate). Isso é tipo, o braço TENTA seguir uma determinada trajetoria que tu deu, mas ele ta cansado, entao o movimentao nao sai perfeito e ele acaba nao conseguindo pegar a bolinha. Aí a gente tem essa trajetoria errada porque ele ta cansado, e faz regressao nela. Isso nos dá os 3 pesos pra trajetoria errada:
-task1 -> (v0, v1, v2)
-
-Agora nós temos os 3 pesos que descrevem a trajetoria certa pra task1 (w0,w1,w2) e os 3 pesos que descrevem a trajetoria errada pra task1 (v0,v1,v2). Aí eu calculo a diferenca deles, que é o que eu chamo de deltas:
-delta0 = v0-w0
-delta1 = v1-w1
-delta2 = v2-w2
-
-Entao temos 
-task1 -> (delta0, delta1, delta2)
-
-Vamos isso pra N tasks. Ai fazemos regressao nisso. Vai ser um modelo que recebe uma task (angulo da bolinha), e preve a diferença entre os parametros do movimento podre e do movimento correto
-
-porque isso é util? Porque na vida real, podemos estar usando um simulador onde tudo é perfeito e maravilhoso, e o movimento funciona 100%. Mas ai testamos no robo real e ele tem ruido, etc, e acabamos tendo o movimento innacurate. Mas a gente sabe como eles diferem. Entao tendo essa ultima regressao, a gente pode depois pegar o movimento ruim, que nao funciona, e usar a regressao pra prever os deltas que precisamos somar nos parametros desse movimento ruim pra ele virar o movimento bom
-
-essa é a ideia
-resumindo: o learn_model é o negocio que aprende esses deltas
-
-se a trajetoria de angulos é
-
-0.1 0.5 0.7 0.4
-
-o robo recebe
-theta_initial = 0.1
-trajectory_relative_angles = [0 0.4 0.2 -0.3]
-ele nao recebe os angulos pra seguir, e sim quanto somar/subtrair no angulo atual
-aí basicamente multiplica cada um desses valores relativos por 0.7, porque quando ele tenta (p.ex.) aumentar o angulo dele em 0.4, ele na verdade consegue aumentar só em 0.4*0.7=0.28. Ele tá cansado
-
-se tu fizer isso, vai ver que a seq. de angulos relativos quando ele ta cansado sao
-[0 0.28 0.14 -0.21]
-
-Entao se ele começa em 0.1, a trajetoria efetiva quando cansado seria
-0.1
-0.1 + 0.28 = 0.38
-0.38 + 0.14 = 0.52
-0.52 - 0.21 = 0.31
-
-Compara a traj innac 
-[0.1 0.38 0.52 0.31]
-com a accurate:
-[0.1 0.5 0.7 0.4]
-
-dá pra ver que os erros vao se acumulando
-
-porque ele nao consegue alcancar o angulo que deveria chegar num passo, e ai no outro tambem nao consegue, etc, e vai piorando. Se o modelo de friccao fosse 0.7 direto nos angulos (e nao angulos relativos), ele teria um erro constante: sempre ficaria 30% (i.e., 100-70%) errado em relacao ao angulo desejado. Aí o modelo de regressao seria facil: é só pegar as saidas inacc e aumenta-las em 30%
-
-
-os relativos é trivial. Se teus angulos estao num vetor x, é só subtrair cada angulo no vetor do angulo anterior no vetor
-
-x = [x[i]-x[i-1] for i in range(1,len(x))]
-faz por partes
-pega a trajetoria que tu tem agora e modifica pra ser uma trajetoria relativa
-e adapta o simulador pra que ele possa recebe os deltaAngle que tem que mover cada junta, ao inves do novo angulo absoluto que a junta tem que assumir
-DEPOIS que fizer isso, ai o passo seguinte seria
-aplicar o modelo de friccao nos angulos relativos
-pra gerar a trajetoria inaccurate
-
-depois de termos isso, aí fazemos regressao na acc e na inacc, pra termos os pesos da acc e da inacc, e podermos calcular o delta destes pesos. Mas isso precisa fazer com calma, porque a gente precisa fazer o plot da traj acc e da inacc e termos certeza que os modelos de regressao que vamos usar para calcular esses pesos estao conseguindo representar as trajetorias bem. Talvez nao dê só pra usar regr. linear com t, t^2, etc. No meu codigo eu usei essa ideia de senos e cossenos e tal. Posso explicar depois. Mas isso vem só depois
-
-Aquele problema que tu estava tendo, da regr. linear nao conseguir modelar bem a sigmoide, é exatamente porque a regr. com t e t^2, etc, provavelmente nao é poderosa o suficiente.
-
-a ideia desse outro modelo que eu usei é fazer o seguinte: ao inves do modelo ser
-
-anguloJoint1(t) = w0 + w1*t + w2*t^2
-
-ele vai ser, p.ex., algo tipo
-
-anguloJoint1(t) = w0 + w1*sin(t) + w2*sin(2t) + w3*sin(3t)
-nao lembro se usei senos ou cossenos
-tem que ver no codigo
+Depois que fizermos essa etapa de prever os deltas, etc, o proximo passo seria fazer o modelo de fadiga ser um pouco mais complexo: ao inves de sempre 30%, pode comecar com fadiga baixa no inicio do movimento, e ir aumentando conforme o movimento vai sendo executado (por o robo vai ficando mais cansado com o tempo e tal)
