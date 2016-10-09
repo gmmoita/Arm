@@ -16,6 +16,8 @@ total_steps = 200
 friction = 0.3 #value between 0 and 1
 pi = math.pi
 
+
+
 def bezier(p, n):
     t = np.linspace(0, 1, n)
     return p[0] * (1 - t)**3 + p[1] * (1 - t)**2 * t*3 + p[2] * (1 - t) * (t**2) * 3 + p[3] * (t**3)
@@ -112,6 +114,25 @@ def calculate_pesos(first,second):
                               [np.sin(pi*t/200) for t in range(total_steps-1)],
                               [np.sin(pi*t*2/200) for t in range(total_steps-1)],
                               [np.sin(pi*t*3/200) for t in range(total_steps-1)]]).T
+
+    regr_first.fit(steps_matrix,first)
+    regr_second.fit(steps_matrix,second)
+
+    return regr_first.coef_,regr_second.coef_
+
+def normalize(value, oldmin, oldmax, newmin, newmax):
+    newvalue = (((float(value) - oldmin) * (newmax - newmin)) / (oldmax - oldmin)) + newmin
+    return newvalue
+
+def calculate_pesos_angles(first,second):
+    angles = [round(x * 0.1, 1) for x in range(-650, 651)]
+    regr_first = linear_model.LinearRegression(fit_intercept=False)
+    regr_second = linear_model.LinearRegression(fit_intercept=False)
+
+    steps_matrix = np.matrix([[1 for angle in angles],
+                              [np.sin(pi*normalize(angle,-65,65,0,1)) for angle in angles],
+                              [np.sin(pi*normalize(angle,-65,65,0,1)*2) for angle in angles],
+                              [np.sin(pi*normalize(angle,-65,65,0,1)*3) for angle in angles]]).T
 
     regr_first.fit(steps_matrix,first)
     regr_second.fit(steps_matrix,second)
@@ -341,6 +362,9 @@ for angle in [round(x * 0.1,1) for x in range(-650, 651)]:
     y4 = pesos_trajectory_without_friction_first[0] + pesos_trajectory_without_friction_first[1] * np.sin(pi*x3/200) + \
          pesos_trajectory_without_friction_first[2] * np.sin(pi*x3*2/200) + pesos_trajectory_without_friction_first[3] * np.sin(pi*x3*3/200)
 
+    if angle % 1 == 0:
+        print angle
+
     #plt.plot(x3,y3)
     #plt.plot(x3,y4)
     #plt.plot(x3,y3+y4)
@@ -349,73 +373,191 @@ for angle in [round(x * 0.1,1) for x in range(-650, 651)]:
     #plt.plot(trajectory_theta2_friction)
 
     #plt.show()
-    print angle
+    #print angle
             #df.close()
         #dn.close()
     #tf.close()
 #tn.close()
 
+predicted_weights_trajectory_normal_joint1 = []
+predicted_weights_trajectory_normal_joint2 = []
+predicted_weights_trajectory_friction_joint1 = []
+predicted_weights_trajectory_friction_joint2 = []
+predicted_weights_deltas_normal_joint1 = []
+predicted_weights_deltas_normal_joint2 =[]
+predicted_weights_deltas_friction_joint1 = []
+predicted_weights_deltas_friction_joint2 = []
+
 for i in range(0,4):
-    plt.plot(angles,deltas_normal_joint1[i])
+    a, b = calculate_pesos_angles(deltas_normal_joint1[i],deltas_normal_joint2[i])
+    predicted_weights_deltas_normal_joint1.append(a)
+    predicted_weights_deltas_normal_joint2.append(b)
+
+    a, b = calculate_pesos_angles(deltas_friction_joint1[i], deltas_friction_joint2[i])
+    predicted_weights_deltas_friction_joint1.append(a)
+    predicted_weights_deltas_friction_joint2.append(b)
+
+    a, b = calculate_pesos_angles(trajectory_normal_joint1[i], trajectory_normal_joint2[i])
+    predicted_weights_trajectory_normal_joint1.append(a)
+    predicted_weights_trajectory_normal_joint2.append(b)
+
+    a, b = calculate_pesos_angles(trajectory_friction_joint1[i], trajectory_friction_joint2[i])
+    predicted_weights_trajectory_friction_joint1.append(a)
+    predicted_weights_trajectory_friction_joint2.append(b)
+
+
+predicted_values_trajectory_normal_joint1 = []
+predicted_values_trajectory_normal_joint2 = []
+predicted_values_trajectory_friction_joint1 = []
+predicted_values_trajectory_friction_joint2 = []
+predicted_values_deltas_normal_joint1 = []
+predicted_values_deltas_normal_joint2 =[]
+predicted_values_deltas_friction_joint1 = []
+predicted_values_deltas_friction_joint2 = []
+
+for i in range(0,4):
+    b = []
+    for angle in angles:
+        a = predicted_weights_deltas_normal_joint1[i][0] + \
+            predicted_weights_deltas_normal_joint1[i][1] * np.sin(pi*normalize(angle,-65,65,0,1)) + \
+            predicted_weights_deltas_normal_joint1[i][2] * np.sin(pi*normalize(angle,-65,65,0,1)*2) + \
+            predicted_weights_deltas_normal_joint1[i][3] * np.sin(pi*normalize(angle,-65,65,0,1)*3)
+        b.append(a)
+    predicted_values_deltas_normal_joint1.append(b)
+
+    b = []
+    for angle in angles:
+        a = predicted_weights_deltas_normal_joint2[i][0] + \
+            predicted_weights_deltas_normal_joint2[i][1] * np.sin(pi * normalize(angle, -65, 65, 0, 1)) + \
+            predicted_weights_deltas_normal_joint2[i][2] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_deltas_normal_joint2[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3)
+        b.append(a)
+    predicted_values_deltas_normal_joint2.append(b)
+
+    b = []
+    for angle in angles:
+        a = predicted_weights_deltas_friction_joint1[i][0] + \
+            predicted_weights_deltas_friction_joint1[i][1] * np.sin(pi * normalize(angle, -65, 65, 0, 1)) + \
+            predicted_weights_deltas_friction_joint1[i][2] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_deltas_friction_joint1[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3)
+        b.append(a)
+    predicted_values_deltas_friction_joint1.append(b)
+
+    b = []
+    for angle in angles:
+        a = predicted_weights_deltas_friction_joint2[i][0] + \
+            predicted_weights_deltas_friction_joint2[i][1] * np.sin(pi * normalize(angle, -65, 65, 0, 1)) + \
+            predicted_weights_deltas_friction_joint2[i][2] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_deltas_friction_joint2[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3)
+        b.append(a)
+    predicted_values_deltas_friction_joint2.append(b)
+
+    b = []
+    for angle in angles:
+        a = predicted_weights_trajectory_normal_joint1[i][0] + \
+            predicted_weights_trajectory_normal_joint1[i][1] * np.sin(pi * normalize(angle, -65, 65, 0, 1)) + \
+            predicted_weights_trajectory_normal_joint1[i][2] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_trajectory_normal_joint1[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3)
+        b.append(a)
+    predicted_values_trajectory_normal_joint1.append(b)
+
+    b = []
+    for angle in angles:
+        a = predicted_weights_trajectory_normal_joint2[i][0] + \
+            predicted_weights_trajectory_normal_joint2[i][1] * np.sin(pi * normalize(angle, -65, 65, 0, 1)) + \
+            predicted_weights_trajectory_normal_joint2[i][2] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_trajectory_normal_joint2[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3)
+        b.append(a)
+    predicted_values_trajectory_normal_joint2.append(b)
+
+    b = []
+    for angle in angles:
+        a = predicted_weights_trajectory_friction_joint1[i][0] + \
+            predicted_weights_trajectory_friction_joint1[i][1] * np.sin(pi * normalize(angle, -65, 65, 0, 1)) + \
+            predicted_weights_trajectory_friction_joint1[i][2] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_trajectory_friction_joint1[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3)
+        b.append(a)
+    predicted_values_trajectory_friction_joint1.append(b)
+
+    b = []
+    for angle in angles:
+        a = predicted_weights_trajectory_friction_joint2[i][0] + \
+            predicted_weights_trajectory_friction_joint2[i][1] * np.sin(pi * normalize(angle, -65, 65, 0, 1)) + \
+            predicted_weights_trajectory_friction_joint2[i][2] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+            predicted_weights_trajectory_friction_joint2[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3)
+        b.append(a)
+    predicted_values_trajectory_friction_joint2.append(b)
+
+
+for i in range(0,4):
+    plt.plot(angles,deltas_normal_joint1[i],label='values')
+    plt.plot(angles,predicted_values_deltas_normal_joint1[i],label='regression')
     plt.xlabel('angle')
     plt.ylabel('w' + str(i))
-    plt.title("deltas_normal_joint1_w" + str(i))
+    plt.title("compar_deltas_normal_joint1_w" + str(i))
     plt.grid(True)
-    plt.savefig("deltas_normal_joint1_w" + str(i) + ".png")
+    plt.savefig("compar_deltas_normal_joint1_w" + str(i) + ".png")
     plt.clf()
 
-    plt.plot(angles,deltas_normal_joint2[i])
+    plt.plot(angles,deltas_normal_joint2[i],label='values')
+    plt.plot(angles,predicted_values_deltas_normal_joint2[i],label='regression')
     plt.xlabel('angle')
     plt.ylabel('w' + str(i))
-    plt.title("deltas_normal_joint2_w" + str(i))
+    plt.title("compar_deltas_normal_joint2_w" + str(i))
     plt.grid(True)
-    plt.savefig("deltas_normal_joint2_w" + str(i) + ".png")
+    plt.savefig("compar_deltas_normal_joint2_w" + str(i) + ".png")
     plt.clf()
 
-    plt.plot(angles,deltas_friction_joint1[i])
+    plt.plot(angles,deltas_friction_joint1[i],label='values')
+    plt.plot(angles,predicted_values_deltas_friction_joint1[i], label='regression')
     plt.xlabel('angle')
     plt.ylabel('w' + str(i))
-    plt.title("deltas_friction_joint1_w" + str(i))
+    plt.title("compar_deltas_friction_joint1_w" + str(i))
     plt.grid(True)
-    plt.savefig("deltas_friction_joint1_w" + str(i) + ".png")
+    plt.savefig("compar_deltas_friction_joint1_w" + str(i) + ".png")
     plt.clf()
 
-    plt.plot(angles, deltas_friction_joint2[i])
+    plt.plot(angles,deltas_friction_joint2[i],label='values')
+    plt.plot(angles,predicted_values_deltas_friction_joint2[i], label='regression')
     plt.xlabel('angle')
     plt.ylabel('w' + str(i))
-    plt.title("deltas_friction_joint2_w" + str(i))
+    plt.title("compar_deltas_friction_joint2_w" + str(i))
     plt.grid(True)
-    plt.savefig("deltas_friction_joint2_w" + str(i) + ".png")
+    plt.savefig("compar_deltas_friction_joint2_w" + str(i) + ".png")
     plt.clf()
 
-    plt.plot(angles,trajectory_normal_joint1[i])
+    plt.plot(angles,trajectory_normal_joint1[i],label='values')
+    plt.plot(angles,predicted_values_trajectory_normal_joint1[i], label='regression')
     plt.xlabel('angle')
     plt.ylabel('w' + str(i))
-    plt.title("trajectory_normal_joint1_w" + str(i))
+    plt.title("compar_trajectory_normal_joint1_w" + str(i))
     plt.grid(True)
-    plt.savefig("trajectory_normal_joint1_w" + str(i) + ".png")
+    plt.savefig("compar_trajectory_normal_joint1_w" + str(i) + ".png")
     plt.clf()
 
-    plt.plot(angles,trajectory_normal_joint2[i])
+    plt.plot(angles,trajectory_normal_joint2[i],label='values')
+    plt.plot(angles,predicted_values_trajectory_normal_joint2[i], label='regression')
     plt.xlabel('angle')
     plt.ylabel('w' + str(i))
-    plt.title("trajectory_normal_joint2_w" + str(i))
+    plt.title("compar_trajectory_normal_joint2_w" + str(i))
     plt.grid(True)
-    plt.savefig("trajectory_normal_joint2_w" + str(i) + ".png")
+    plt.savefig("compar_trajectory_normal_joint2_w" + str(i) + ".png")
     plt.clf()
 
-    plt.plot(angles,trajectory_friction_joint1[i])
+    plt.plot(angles,trajectory_friction_joint1[i],label='values')
+    plt.plot(angles,predicted_values_trajectory_friction_joint1[i], label='regression')
     plt.xlabel('angle')
     plt.ylabel('w' + str(i))
-    plt.title("trajectory_friction_joint1_w" + str(i))
+    plt.title("compar_trajectory_friction_joint1_w" + str(i))
     plt.grid(True)
-    plt.savefig("trajectory_friction_joint1_w" + str(i) + ".png")
+    plt.savefig("compar_trajectory_friction_joint1_w" + str(i) + ".png")
     plt.clf()
 
-    plt.plot(angles,trajectory_friction_joint2[i])
+    plt.plot(angles,trajectory_friction_joint2[i],label='values')
+    plt.plot(angles,predicted_values_trajectory_friction_joint2[i], label='regression')
     plt.xlabel('angle')
     plt.ylabel('w' + str(i))
-    plt.title("trajectory_friction_joint2_w" + str(i))
+    plt.title("compar_trajectory_friction_joint2_w" + str(i))
     plt.grid(True)
-    plt.savefig("trajectory_friction_joint2_w" + str(i) + ".png")
+    plt.savefig("compar_trajectory_friction_joint2_w" + str(i) + ".png")
     plt.clf()
