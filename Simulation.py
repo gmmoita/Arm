@@ -5,6 +5,7 @@ import time
 import numpy as np
 import pyglet
 from sklearn import linear_model
+from matplotlib.legend_handler import HandlerLine2D
 import matplotlib.pyplot as plt
 import random
 
@@ -15,6 +16,7 @@ yf = 400.0
 total_steps = 200
 friction = 0.3 #value between 0 and 1
 pi = math.pi
+mode = ""
 
 def bezier(p, n):
     t = np.linspace(0, 1, n)
@@ -82,10 +84,17 @@ def convert_deltas(v):
     for i in range(1,len(v)):
         deltas.append(v[i]-v[i-1])
 
-    #print v
-    #print deltas
-
     return deltas
+
+def convert_trajectory(v,init):
+    trajectory = []
+    trajectory.append(init)
+
+    for i in range(0,len(v)):
+        trajectory.append(v[i]+trajectory[-1])
+
+    return trajectory
+
 
 def get_joint_positions():
     """This method finds the (x,y) coordinates of each joint"""
@@ -109,9 +118,9 @@ def calculate_pesos(first,second):
     regr_second = linear_model.LinearRegression(fit_intercept=False)
 
     steps_matrix = np.matrix([[1 for t in range(total_steps-1)],
-                              [np.sin(pi*t/200) for t in range(total_steps-1)],
-                              [np.sin(pi*t*2/200) for t in range(total_steps-1)],
-                              [np.sin(pi*t*3/200) for t in range(total_steps-1)]]).T
+                              [np.sin(pi*t/200) for t in range(total_steps-1)],[np.cos(pi*t/200) for t in range(total_steps-1)],
+                              [np.sin(pi*t*2/200) for t in range(total_steps-1)],[np.cos(pi*t*2/200) for t in range(total_steps-1)],
+                              [np.sin(pi*t*3/200) for t in range(total_steps-1)],[np.cos(pi*t*3/200) for t in range(total_steps-1)]]).T
 
     regr_first.fit(steps_matrix,first)
     regr_second.fit(steps_matrix,second)
@@ -119,28 +128,50 @@ def calculate_pesos(first,second):
     return regr_first.coef_,regr_second.coef_
 
 
-def angles_function(t):
+def angles_function(t,mode):
 
-    #array of angles
-    #first_joint = pesos_first[t]
-    #second_joint = pesos_second[t]
-    #return [first_joint,second_joint,0.0]
+    if(mode == "array_angles"):
+        #array of angles
+        first_joint = pesos_first[t]
+        second_joint = pesos_second[t]
+        return [first_joint,second_joint,0.0]
 
-    #array of deltas
-    #window.last_first = window.last_first + pesos_first[t]
-    #window.last_second = window.last_second + pesos_second[t]
-    #return [window.last_first,window.last_second,0.0]
+    elif(mode == "array_deltas"):
+        #array of deltas
+        window.last_first = window.last_first + pesos_first[t]
+        window.last_second = window.last_second + pesos_second[t]
+        return [window.last_first,window.last_second,0.0]
 
-    #with regression
-    window.last_first = window.last_first + pesos_first[0] + pesos_first[1] * np.sin(pi*t/200) + pesos_first[2] * np.sin(pi*t*2/200) + pesos_first[3] * np.sin(pi*t*3/200)
-    window.last_second =  window.last_second + pesos_second[0] + pesos_second[1] * np.sin(pi*t/200) + pesos_second[2] * np.sin(pi*t*2/200) + pesos_second[3] * np.sin(pi*t*3/200)
+    elif(mode == "weights_deltas"):
+        #with regression and deltas
+        window.last_first = window.last_first + pesos_first[0] + \
+                            pesos_first[1] * np.sin(pi*t/200) + pesos_first[2] * np.cos(pi*t/200) + \
+                            pesos_first[3] * np.sin(pi*t*2/200) + pesos_first[4] * np.cos(pi*t*2/200) + \
+                            pesos_first[5] * np.sin(pi*t*3/200) + pesos_first[6] * np.cos(pi*t*3/200)
+        window.last_second =  window.last_second + pesos_second[0] + \
+                              pesos_second[1] * np.sin(pi*t/200) + pesos_second[1] * np.cos(pi*t/200) + \
+                              pesos_second[2] * np.sin(pi*t*2/200) + pesos_second[2] * np.cos(pi*t*2/200) + \
+                              pesos_second[3] * np.sin(pi*t*3/200) + pesos_second[3] * np.cos(pi*t*3/200)
+        return [window.last_first, window.last_second, 0.0]
 
-    return [window.last_first,window.last_second,0.0]
+    elif(mode == "weights_angles"):
+        # with regression and angles
+        first_joint = pesos_first[0] + \
+                            pesos_first[1] * np.sin(pi * t / 200) + pesos_first[2] * np.cos(pi * t / 200) + \
+                            pesos_first[3] * np.sin(pi * t * 2 / 200) + pesos_first[4] * np.cos(pi * t * 2 / 200) + \
+                            pesos_first[5] * np.sin(pi * t * 3 / 200) + pesos_first[6] * np.cos(pi * t * 3 / 200)
+        second_joint = pesos_second[0] + \
+                             pesos_second[1] * np.sin(pi * t / 200) + pesos_second[2] * np.cos(pi * t / 200) + \
+                             pesos_second[3] * np.sin(pi * t * 2 / 200) + pesos_second[4] * np.cos(pi * t * 2 / 200) + \
+                             pesos_second[5] * np.sin(pi * t * 3 / 200) + pesos_second[6] * np.cos(pi * t * 3 / 200)
+        return [first_joint, second_joint, 0.0]
 
 
 def update(dt):
     label.text = '(x,y) = (%.3f, %.3f)' % (ball.x, ball.y)
-    arm.q = angles_function(window.step)
+    window.traj_theta1.append(arm.q[0])
+    window.traj_theta2.append(arm.q[1])
+    arm.q = angles_function(window.step,mode)
     window.step = window.step + 1
     window.jps = get_joint_positions()  # get new joint (x,y) positions
     label.text = 'ball = (%.3f, %.3f)' % (ball.x, ball.y)
@@ -160,6 +191,9 @@ class Simulation(pyglet.window.Window):
 
         self.last_first = 0.0
         self.last_second = 0.0
+
+        self.traj_theta1 = []
+        self.traj_theta2 = []
 
     def set_jps(self):
         self.jps = get_joint_positions()  # get new joint (x,y) positions
@@ -200,7 +234,24 @@ class Simulation(pyglet.window.Window):
                                                           self.jps[0][i + 1], self.jps[1][i + 1])))
 
         if(self.step == 199):
-            time.sleep(10)
+            plt.figure(1)
+            plt.subplot(211)
+            line1, = plt.plot(trajectory_theta1,color='green',label='Expected')
+            line2, = plt.plot(self.traj_theta1,color='blue',label='Real')
+            plt.legend(handler_map={line1: HandlerLine2D(numpoints=4)}, loc=4)
+            plt.title("Real x Expected Theta1")
+            plt.ylabel("Angle")
+
+            plt.subplot(212)
+            line1, = plt.plot(trajectory_theta2, color='green', label='Expected')
+            line2, = plt.plot(self.traj_theta2, color='blue', label='Real')
+            plt.legend(handler_map={line1: HandlerLine2D(numpoints=4)}, loc=4)
+            plt.title("Real x Expected Theta2")
+            plt.xlabel("Step")
+            plt.ylabel("Angle")
+
+            plt.show()
+
             sys.exit()
 
     '''def on_mouse_motion(self,x, y, dx, dy):
@@ -233,8 +284,10 @@ label = pyglet.text.Label('Mouse (x,y)', font_name='Times New Roman',
 
 #initial configuration of the arm
 q0 = arm.q
+
 #calculate final angles
 qf = arm.inv_kin([ball.xf - (window.width / 2), ball.yf])
+
 #how much each joint need to move each step
 #trajectory_theta1,trajectory_theta2 = calc_steps_linear(q0,qf)
 #trajectory_theta1,trajectory_theta2 = calc_steps_exponential(q0,qf)
@@ -243,73 +296,35 @@ qf = arm.inv_kin([ball.xf - (window.width / 2), ball.yf])
 #trajectory_theta1,trajectory_theta2 = calc_steps_bezier(q0,qf)
 trajectory_theta1,trajectory_theta2 = calc_steps_mixed(q0,qf)
 
-#print trajectory_theta1,trajectory_theta2
+#first position
+window.last_first = trajectory_theta1[0]
+window.last_second = trajectory_theta2[0]
 
-#plt.plot(trajectory_theta2)
-#plt.show()
-
+#calculate weights that predict the trajectory without friction
 pesos_trajectory_without_friction_first,pesos_trajectory_without_friction_second = calculate_pesos(trajectory_theta1[1:],trajectory_theta2[1:])
 
-pesos_first,pesos_second = convert_deltas(trajectory_theta1),convert_deltas(trajectory_theta2)
+#convert the trajectory to deltas
+deltas_theta1,deltas_theta2 = convert_deltas(trajectory_theta1),convert_deltas(trajectory_theta2)
 
-window.last_first = pesos_first[0]
-window.last_second = pesos_second[0]
+#calculate weights that predict the deltas without friction
+pesos_without_friction_first,pesos_without_friction_second = calculate_pesos(deltas_theta1[1:],deltas_theta2[1:])
 
-pesos_without_friction_first,pesos_without_friction_second = calculate_pesos(pesos_first[1:],pesos_second[1:])
+#friction applied in the deltas
+deltas_friction_theta1 = [p*(1.0 - friction) for p in deltas_theta1[1:]]
+deltas_friction_theta2 = [p*(1.0 - friction) for p in deltas_theta2[1:]]
 
-#plt.plot(pesos_second[1:])
+#calculate weights that predict the deltas with friction
+pesos_with_friction_first,pesos_with_friction_second = calculate_pesos(deltas_friction_theta1,deltas_friction_theta2)
 
-x1 = np.linspace(0,200)
-y1 = pesos_without_friction_second[0] + pesos_without_friction_second[1] * np.sin(pi*x1/200) \
-     + pesos_without_friction_second[2] * np.sin(pi*x1*2/200) \
-     + pesos_without_friction_second[3] * np.sin(pi*x1*3/200)
-#plt.plot(x1,y1)
+#convert the frictioned deltas to a frictioned trajectory
+trajectory_friction_theta1, trajectory_friction_theta2 = convert_trajectory(deltas_friction_theta1,trajectory_theta1[0]),convert_trajectory(deltas_friction_theta2,trajectory_theta2[0])
 
-#friction
-pesos_first = [p*(1.0 - friction) for p in pesos_first[1:]]
-pesos_second = [p*(1.0 - friction) for p in pesos_second[1:]]
+#calculate weights that predict the trajectory with friction
+pesos_trajectory_with_friction_first,pesos_trajectory_with_friction_second = calculate_pesos(trajectory_friction_theta1[1:],trajectory_friction_theta2[1:])
 
-#print pesos_first
-#plt.plot(pesos_second)
-
-pesos_first,pesos_second = calculate_pesos(pesos_first,pesos_second)
-
-#print pesos_first/pesos_without_friction_first
-#print pesos_second/pesos_without_friction_second
-
-x2 = np.linspace(0,200)
-y2 = pesos_second[0] + pesos_second[1] * np.sin(pi*x2/200) + pesos_second[2] * np.sin(pi*x2*2/200) + pesos_second[3] * np.sin(pi*x2*3/200)
-#plt.plot(x2,y2)
-
-acc1 = window.last_first
-acc2 = window.last_second
-trajectory_theta1_friction = [acc1]
-trajectory_theta2_friction = [acc2]
-for t in range(1,total_steps-1):
-    acc1 += pesos_first[0] + pesos_first[1] * np.sin(pi * t / 200) + pesos_first[2] * np.sin(pi * t * 2 / 200) + pesos_first[3] * np.sin(pi * t * 3 / 200)
-    acc2 += pesos_second[0] + pesos_second[1] * np.sin(pi*t/200) + pesos_second[2] * np.sin(pi*t*2/200) + pesos_second[3] * np.sin(pi*t*3/200)
-    trajectory_theta1_friction.append(acc1)
-    trajectory_theta2_friction.append(acc2)
-
-pesos_trajectory_with_friction_first,pesos_trajectory_with_friction_second = calculate_pesos(trajectory_theta1_friction,trajectory_theta2_friction)
-
-print pesos_trajectory_with_friction_first-pesos_trajectory_without_friction_first
-print pesos_trajectory_with_friction_second-pesos_trajectory_without_friction_second
-
-x3 = np.linspace(0,200)
-y3 = pesos_trajectory_with_friction_first[0] + pesos_trajectory_with_friction_first[1] * np.sin(pi*x3/200) + \
-     pesos_trajectory_with_friction_first[2] * np.sin(pi*x3*2/200) + pesos_trajectory_with_friction_first[3] * np.sin(pi*x3*3/200)
-y4 = pesos_trajectory_without_friction_first[0] + pesos_trajectory_without_friction_first[1] * np.sin(pi*x3/200) + \
-     pesos_trajectory_without_friction_first[2] * np.sin(pi*x3*2/200) + pesos_trajectory_without_friction_first[3] * np.sin(pi*x3*3/200)
-
-plt.plot(x3,y3)
-plt.plot(x3,y4)
-plt.plot(x3,y3+y4)
-
-#plt.plot(trajectory_theta2)
-#plt.plot(trajectory_theta2_friction)
-
-#plt.show()
+#define what weights will be used
+pesos_first, pesos_second = pesos_trajectory_with_friction_first,pesos_trajectory_with_friction_second
+mode = "weights_angles"
 
 
 pyglet.app.run()
