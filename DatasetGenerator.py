@@ -628,7 +628,7 @@ for i in range(0,7):
 #generation of angulo -> wi_semFriccao/wi_comFriccao
 #ONLY WORKING WITH TRAJECTORY
 
-for i in range(0,7):
+'''for i in range(0,7):
     nome_arq_delta = "w" + str(i) + "-delta_training_set.csv"
     nome_arq_ratio = "w" + str(i) + "-ratio_training_set.csv"
     with open(nome_arq_delta,"wb") as arq_delta:
@@ -659,4 +659,138 @@ for i in range(0,7):
                 if angle % 1 == 0:
                     print str(angle) + "(w" + str(i) + ")"
         arq_ratio.close()
-    arq_delta.close()
+    arq_delta.close()'''
+
+
+#performing regression2
+joint1_deltas = [[],[],[],[],[],[],[]]
+joint2_deltas = [[],[],[],[],[],[],[]]
+joint1_ratios = [[],[],[],[],[],[],[]]
+joint2_ratios = [[],[],[],[],[],[],[]]
+
+#creating ratios and deltas storage
+for i in range(0,7):
+    for angle in angles:
+
+        angle_index = angles.index(angle)
+
+        wi_semFriccao_joint1 = trajectory_normal_joint1[i][angle_index]
+        wi_comFriccao_joint1 = trajectory_friction_joint1[i][angle_index]
+        wi_semFriccao_joint2 = trajectory_normal_joint2[i][angle_index]
+        wi_comFriccao_joint2 = trajectory_friction_joint2[i][angle_index]
+
+        joint1_delta = wi_semFriccao_joint1 - wi_comFriccao_joint1
+        joint1_ratio = wi_semFriccao_joint1 / wi_comFriccao_joint1
+        joint2_delta = wi_semFriccao_joint2 - wi_comFriccao_joint2
+        joint2_ratio = wi_semFriccao_joint2 / wi_comFriccao_joint2
+
+        joint1_deltas[i].append(joint1_delta)
+        joint1_ratios[i].append(joint1_ratio)
+        joint2_deltas[i].append(joint2_delta)
+        joint2_ratios[i].append(joint2_ratio)
+
+        if angle % 1 == 0:
+            print str(angle) + "(w" + str(i) + ")"
+
+
+weights_joint1_deltas = []
+weights_joint1_ratios = []
+weights_joint2_deltas = []
+weights_joint2_ratios = []
+
+#performing regressions
+for i in range(0,7):
+    weights_joint1_delta_i, weights_joint2_delta_i = calculate_pesos_angles(joint1_deltas[i],joint2_deltas[i])
+    weights_joint1_deltas.append(weights_joint1_delta_i)
+    weights_joint2_deltas.append(weights_joint2_delta_i)
+
+    weights_joint1_ratio_i, weights_joint2_ratio_i = calculate_pesos_angles(joint1_ratios[i], joint2_ratios[i])
+    weights_joint1_ratios.append(weights_joint1_ratio_i)
+    weights_joint2_ratios.append(weights_joint2_ratio_i)
+
+
+#generating predicted for each angle
+predicted_joint1_deltas = [[],[],[],[],[],[],[]]
+predicted_joint1_ratios = [[],[],[],[],[],[],[]]
+predicted_joint2_deltas = [[],[],[],[],[],[],[]]
+predicted_joint2_ratios = [[],[],[],[],[],[],[]]
+
+for i in range(0,7):
+    for angle in angles:
+        predicted_joint1_delta_i = weights_joint1_deltas[i][0] + \
+                                   weights_joint1_deltas[i][1] * np.sin(pi * normalize(angle, -65, 65, 0, 1) / 200) + \
+                                   weights_joint1_deltas[i][2] * np.cos(pi * normalize(angle, -65, 65, 0, 1) / 200) + \
+                                   weights_joint1_deltas[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2 / 200) + \
+                                   weights_joint1_deltas[i][4] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 2 / 200) + \
+                                   weights_joint1_deltas[i][5] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3 / 200) + \
+                                   weights_joint1_deltas[i][6] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 3 / 200)
+        predicted_joint1_deltas[i].append(predicted_joint1_delta_i)
+
+        predicted_joint2_delta_i = weights_joint2_deltas[i][0] + \
+                                   weights_joint2_deltas[i][1] * np.sin(pi * normalize(angle, -65, 65, 0, 1) / 200) + \
+                                   weights_joint2_deltas[i][2] * np.cos(pi * normalize(angle, -65, 65, 0, 1) / 200) + \
+                                   weights_joint2_deltas[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2 / 200) + \
+                                   weights_joint2_deltas[i][4] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 2 / 200) + \
+                                   weights_joint2_deltas[i][5] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3 / 200) + \
+                                   weights_joint2_deltas[i][6] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 3 / 200)
+        predicted_joint2_deltas[i].append(predicted_joint2_delta_i)
+
+        predicted_joint1_ratio_i = weights_joint1_ratios[i][0] + \
+                                   weights_joint1_ratios[i][1] * np.sin(pi * normalize(angle, -65, 65, 0, 1) / 200) + \
+                                   weights_joint1_ratios[i][2] * np.cos(pi * normalize(angle, -65, 65, 0, 1) / 200) + \
+                                   weights_joint1_ratios[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2 / 200) + \
+                                   weights_joint1_ratios[i][4] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 2 / 200) + \
+                                   weights_joint1_ratios[i][5] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3 / 200) + \
+                                   weights_joint1_ratios[i][6] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 3 / 200)
+        predicted_joint1_ratios[i].append(predicted_joint1_ratio_i)
+
+        predicted_joint2_ratio_i = weights_joint2_ratios[i][0] + \
+                                   weights_joint2_ratios[i][1] * np.sin(pi * normalize(angle, -65, 65, 0, 1) / 200) + \
+                                   weights_joint2_ratios[i][2] * np.cos(pi * normalize(angle, -65, 65, 0, 1) / 200) + \
+                                   weights_joint2_ratios[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2 / 200) + \
+                                   weights_joint2_ratios[i][4] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 2 / 200) + \
+                                   weights_joint2_ratios[i][5] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3 / 200) + \
+                                   weights_joint2_ratios[i][6] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 3 / 200)
+        predicted_joint2_ratios[i].append(predicted_joint2_ratio_i)
+
+
+#generating graphs for comparing
+for i in range(0,7):
+    plt.plot(angles, joint1_ratios[i], label='values')
+    plt.plot(angles, predicted_joint1_ratios[i], label='regression')
+    plt.xlabel('angle')
+    plt.ylabel('joint1_w' + str(i))
+    plt.title("compar_ratio_joint1_w" + str(i))
+    plt.grid(True)
+    plt.savefig("compar_ratio_joint1_w" + str(i) + ".png")
+    plt.clf()
+
+    plt.plot(angles, joint2_ratios[i], label='values')
+    plt.plot(angles, predicted_joint2_ratios[i], label='regression')
+    plt.xlabel('angle')
+    plt.ylabel('joint2_w' + str(i))
+    plt.title("compar_ratio_joint2_w" + str(i))
+    plt.grid(True)
+    plt.savefig("compar_ratio_joint2_w" + str(i) + ".png")
+    plt.clf()
+
+    plt.plot(angles, joint1_deltas[i], label='values')
+    plt.plot(angles, predicted_joint1_deltas[i], label='regression')
+    plt.xlabel('angle')
+    plt.ylabel('joint1_w' + str(i))
+    plt.title("compar_delta_joint1_w" + str(i))
+    plt.grid(True)
+    plt.savefig("compar_delta_joint1_w" + str(i) + ".png")
+    plt.clf()
+
+    plt.plot(angles, joint2_deltas[i], label='values')
+    plt.plot(angles, predicted_joint2_deltas[i], label='regression')
+    plt.xlabel('angle')
+    plt.ylabel('joint2_w' + str(i))
+    plt.title("compar_delta_joint2_w" + str(i))
+    plt.grid(True)
+    plt.savefig("compar_delta_joint2_w" + str(i) + ".png")
+    plt.clf()
+
+
+
