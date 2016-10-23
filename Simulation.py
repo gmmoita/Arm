@@ -12,6 +12,7 @@ import random
 import Arm
 import Ball
 
+angle = 60
 yf = 400.0
 total_steps = 200
 friction = 0.3 #value between 0 and 1
@@ -76,6 +77,10 @@ def calc_steps_mixed(q0,qf):
     trajectory_theta2 = calc_steps_sigmoid(q0,qf)[1]
 
     return trajectory_theta1,trajectory_theta2
+
+def normalize(value, oldmin, oldmax, newmin, newmax):
+    newvalue = (((float(value) - oldmin) * (newmax - newmin)) / (oldmax - oldmin)) + newmin
+    return newvalue
 
 def convert_deltas(v):
     deltas = []
@@ -270,7 +275,7 @@ window = Simulation()
 window.set_jps()
 
 # create an instance of the ball
-ball = Ball.Ball(float(window.width / 2), float(window.height), math.radians(-60), yf)
+ball = Ball.Ball(float(window.width / 2), float(window.height), math.radians(angle), yf)
 
 distance = math.hypot((ball.xf - (window.width / 2)), (ball.yf - 0))
 
@@ -323,7 +328,7 @@ trajectory_friction_theta1, trajectory_friction_theta2 = convert_trajectory(delt
 pesos_trajectory_with_friction_first,pesos_trajectory_with_friction_second = calculate_pesos(trajectory_friction_theta1[1:],trajectory_friction_theta2[1:])
 
 #define what weights will be used
-pesos_first, pesos_second = pesos_trajectory_with_friction_first,pesos_trajectory_with_friction_second
+pesos_first, pesos_second = pesos_trajectory_without_friction_first,pesos_trajectory_without_friction_second
 mode = "weights_angles"
 
 
