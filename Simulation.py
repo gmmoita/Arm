@@ -8,16 +8,20 @@ from sklearn import linear_model
 from matplotlib.legend_handler import HandlerLine2D
 import matplotlib.pyplot as plt
 import random
+from DatasetGenerator import second_recursion
 
 import Arm
 import Ball
 
-angle = 60
+#angle = random.uniform(-65.0,+65.0)
+angle = -65
 yf = 400.0
 total_steps = 200
 friction = 0.3 #value between 0 and 1
+n_angles_second_prediction = 100
+correction = "ratios"
 pi = math.pi
-mode = ""
+mode = "weights_angles"
 
 def bezier(p, n):
     t = np.linspace(0, 1, n)
@@ -82,6 +86,12 @@ def normalize(value, oldmin, oldmax, newmin, newmax):
     newvalue = (((float(value) - oldmin) * (newmax - newmin)) / (oldmax - oldmin)) + newmin
     return newvalue
 
+def calc_distance(x,y):
+
+    d = x**2 + y**2
+
+    return d
+
 def convert_deltas(v):
     deltas = []
     deltas.append(v[0])
@@ -99,6 +109,36 @@ def convert_trajectory(v,init):
         trajectory.append(v[i]+trajectory[-1])
 
     return trajectory
+
+
+def apply_correction(pesos_friction, pesos_correction, correction, angle):
+
+    pesos_corrected = []
+
+
+    for i in range(len(pesos_friction)):
+        local_correction = pesos_correction[i][0] + \
+                            pesos_correction[i][1] * np.sin(pi * normalize(angle, -65, 65, 0, 1)) + \
+                            pesos_correction[i][2] * np.cos(pi * normalize(angle, -65, 65, 0, 1)) + \
+                            pesos_correction[i][3] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+                            pesos_correction[i][4] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 2) + \
+                            pesos_correction[i][5] * np.sin(pi * normalize(angle, -65, 65, 0, 1) * 3) + \
+                            pesos_correction[i][6] * np.cos(pi * normalize(angle, -65, 65, 0, 1) * 3)
+
+        if correction == "deltas":
+            corrected = pesos_friction[i] + local_correction
+            pesos_corrected.append(corrected)
+
+        elif correction == "ratios":
+            corrected = pesos_friction[i] * local_correction
+            pesos_corrected.append(corrected)
+
+        else:
+            raise #correction type error
+
+    return pesos_corrected
+
+
 
 
 def get_joint_positions():
@@ -210,7 +250,8 @@ class Simulation(pyglet.window.Window):
             arm_xy = (arm_xy[0] + (window.width / 2), arm_xy[1])
             ball_xy = [ball.xf,ball.yf]
             error = np.sqrt((np.array(ball_xy) - np.array(arm_xy)) ** 2)
-            print error
+            distance = calc_distance(error[0],error[1])
+            print distance
         label.draw()
         pyglet.graphics.draw(4, pyglet.gl.GL_QUADS,
                                ('v2f', (ball.x - 10, ball.y - 10,
@@ -243,7 +284,7 @@ class Simulation(pyglet.window.Window):
             plt.subplot(211)
             line1, = plt.plot(trajectory_theta1,color='green',label='Expected')
             line2, = plt.plot(self.traj_theta1,color='blue',label='Real')
-            plt.legend(handler_map={line1: HandlerLine2D(numpoints=4)}, loc=4)
+            plt.legend(handler_map={line1: HandlerLine2D(numpoints=4)}, loc=3)
             plt.title("Real x Expected Theta1")
             plt.ylabel("Angle")
 
@@ -327,9 +368,28 @@ trajectory_friction_theta1, trajectory_friction_theta2 = convert_trajectory(delt
 #calculate weights that predict the trajectory with friction
 pesos_trajectory_with_friction_first,pesos_trajectory_with_friction_second = calculate_pesos(trajectory_friction_theta1[1:],trajectory_friction_theta2[1:])
 
+#generate angles to the second prediction (can be either aleatory or equally spaced
+#equally spaced
+#space = (65.0 + 65.0) / float(n_angles_second_prediction-1)
+#second_prediction_angles = [((-65.0) + (i*space)) for i in range(n_angles_second_prediction)]
+
+#randomly generated
+second_prediction_angles = random.sample([x / 100.0 for x in range(-6500, 6500)], n_angles_second_prediction)
+second_prediction_angles.sort()
+
+print angle
+
+print second_prediction_angles
+
+#execute second regression
+second_recursion_first, second_recursion_second = second_recursion(correction, second_prediction_angles)
+
+#apply correction
+pesos_first = apply_correction(pesos_trajectory_with_friction_first, second_recursion_first, correction, angle)
+pesos_second = apply_correction(pesos_trajectory_with_friction_second, second_recursion_second, correction, angle)
+
 #define what weights will be used
-pesos_first, pesos_second = pesos_trajectory_without_friction_first,pesos_trajectory_without_friction_second
-mode = "weights_angles"
+#pesos_first, pesos_second = pesos_trajectory_without_friction_first,pesos_trajectory_without_friction_second
 
 
 pyglet.app.run()
