@@ -709,9 +709,9 @@ def second_recursion(type, angles):
             print "NAO VAI ALCANCAR!"
             raise
 
-        label = pyglet.text.Label('Mouse (x,y)', font_name='Times New Roman',
-                                  font_size=36, x=window.width // 2, y=window.height // 2,
-                                  anchor_x='center', anchor_y='center')
+        #label = pyglet.text.Label('Mouse (x,y)', font_name='Times New Roman',
+        #                          font_size=36, x=window.width // 2, y=window.height // 2,
+         #                         anchor_x='center', anchor_y='center')
 
         # initial configuration of the arm
         q0 = arm.q
