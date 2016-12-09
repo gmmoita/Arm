@@ -9,6 +9,7 @@ from matplotlib.legend_handler import HandlerLine2D
 import matplotlib.pyplot as plt
 import random
 from DatasetGenerator import second_recursion
+from scipy import stats
 
 import Arm
 import Ball
@@ -412,19 +413,24 @@ print distance'''
 #pyglet.app.run()
 
 #Experiment
-final_errors_deltas = {k:0 for k in ([3]+range(5,101,5))}
-final_errors_ratios = {k:0 for k in ([3]+range(5,101,5))}
+#num_examples = [3] + range(5,101,5)
+#num_examples = num_examples
+num_examples = range(4,16)
+n_times = 50
 
-final_stddev_deltas = {k:0 for k in ([3]+range(5,101,5))}
-final_stddev_ratios = {k:0 for k in ([3]+range(5,101,5))}
+final_errors_deltas = {k:0 for k in num_examples}
+final_errors_ratios = {k:0 for k in num_examples}
+
+final_stddev_deltas = {k:0 for k in num_examples}
+final_stddev_ratios = {k:0 for k in num_examples}
 
 '''
 #experiment for deltas
 correction = "deltas"
-errors_dict = {k:[] for k in ([3]+range(5,101,5))}
-for i in range(0,10):
-    print str(i + 1) + "/10 (deltas)"
-    for n_angles_second_prediction in ([3]+range(5,101,5)):
+errors_dict = {k:[] for k in num_examples}
+for i in range(0,n_times):
+    print str(i + 1) + "/" + str(n_times) + " (deltas)"
+    for n_angles_second_prediction in num_examples:
         print "\t#Examples = " + str(n_angles_second_prediction)
         # randomly generated examples
         second_prediction_angles = random.sample([x / 1.0 for x in range(-65, 65)], n_angles_second_prediction)
@@ -435,8 +441,8 @@ for i in range(0,10):
         #exhaustive test
         acc_error = 0
         for test_angle in [x / 1.0 for x in range(-65, 65)]:
-            if test_angle % 10 == 0:
-                print "\t\tTesting Angle " + str(test_angle)
+            #if test_angle % 10 == 0:
+            #    print "\t\tTesting Angle " + str(test_angle)
 
             # create an instance of the arm
             arm = Arm.Arm3Link(L=np.array([400, 200, 0]))
@@ -514,17 +520,17 @@ for i in range(0,10):
 
         errors_dict[n_angles_second_prediction].append(mean_error)
 
-for n_angles_second_prediction in ([3]+range(5,101,5)):
+for n_angles_second_prediction in num_examples:
     errors_list = errors_dict[n_angles_second_prediction]
     final_errors_deltas[n_angles_second_prediction] = sum(errors_list)/len(errors_list)
     final_stddev_deltas[n_angles_second_prediction] = stddev(errors_list)'''
 
 #experiment for ratios
 correction = "ratios"
-errors_dict = {k:[] for k in (range(5,16)+range(20,101,5))}
-for i in range(0,10):
-    print str(i+1) + "/10 (ratios)"
-    for n_angles_second_prediction in (range(5,16)+range(20,101,5)):
+errors_dict = {k:[] for k in num_examples}
+for i in range(0,n_times):
+    print str(i + 1) + "/" + str(n_times) + " (ratios)"
+    for n_angles_second_prediction in num_examples:
         print "\t#Examples = " + str(n_angles_second_prediction)
         # randomly generated examples
         second_prediction_angles = random.sample([x / 1.0 for x in range(-65, 65)], n_angles_second_prediction)
@@ -535,8 +541,8 @@ for i in range(0,10):
         #exhaustive test
         acc_error = 0
         for test_angle in [x / 1.0 for x in range(-65, 65)]:
-            if test_angle % 10 == 0:
-                print "\t\tTesting Angle " + str(test_angle)
+            #if test_angle % 10 == 0:
+            #    print "\t\tTesting Angle " + str(test_angle)
 
             # create an instance of the arm
             arm = Arm.Arm3Link(L=np.array([400, 200, 0]))
@@ -614,17 +620,18 @@ for i in range(0,10):
 
         errors_dict[n_angles_second_prediction].append(mean_error)
 
-for n_angles_second_prediction in (range(5,16)+range(20,101,5)):
+for n_angles_second_prediction in num_examples:
     errors_list = errors_dict[n_angles_second_prediction]
-    final_errors_ratios[n_angles_second_prediction] = sum(errors_list)/len(errors_list)
+    #final_errors_ratios[n_angles_second_prediction] = sum(errors_list)/len(errors_list)
+    final_errors_ratios[n_angles_second_prediction] = stats.hmean(errors_list)
     final_stddev_ratios[n_angles_second_prediction] = stddev(errors_list)
 
 
 #writing in archive
-with open("experiment_results_ratios_only.csv","wb") as output:
+with open("specific_harmonic_experiment_results_ratios_only.csv","wb") as output:
     #output.write("angle;error_average_deltas;error_stddev_deltas;error_average_ratios;error_stddev_ratios\n")
-    output.write("angle;error_average_ratios;error_stddev_ratios\n")
-    for n_angles_second_prediction in (range(5,16)+range(20,101,5)):
+    output.write("#examples;error_average_ratios;error_stddev_ratios\n")
+    for n_angles_second_prediction in num_examples:
         output.write(str(n_angles_second_prediction) + ";")
         #output.write(str(final_errors_deltas[n_angles_second_prediction]) + ";")
         #output.write(str(final_stddev_deltas[n_angles_second_prediction]) + ";")
