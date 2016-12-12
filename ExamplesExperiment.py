@@ -622,18 +622,22 @@ for i in range(0,n_times):
 
 for n_angles_second_prediction in num_examples:
     errors_list = errors_dict[n_angles_second_prediction]
-    #final_errors_ratios[n_angles_second_prediction] = sum(errors_list)/len(errors_list)
-    final_errors_ratios[n_angles_second_prediction] = stats.hmean(errors_list)
+    final_errors_ratios[n_angles_second_prediction] = sum(errors_list)/len(errors_list)
     final_stddev_ratios[n_angles_second_prediction] = stddev(errors_list)
 
 
 #writing in archive
-with open("specific_harmonic_experiment_results_ratios_only.csv","wb") as output:
+with open("allerrors_experiment_results_ratios_only.csv","wb") as output:
     #output.write("angle;error_average_deltas;error_stddev_deltas;error_average_ratios;error_stddev_ratios\n")
-    output.write("#examples;error_average_ratios;error_stddev_ratios\n")
+    output.write("#examples;")
+    for i in range(len(errors_dict[num_examples[0]])):
+        output.write("error" + str(i) + ";")
+    output.write("error_average_ratios;error_stddev_ratios\n")
     for n_angles_second_prediction in num_examples:
         output.write(str(n_angles_second_prediction) + ";")
         #output.write(str(final_errors_deltas[n_angles_second_prediction]) + ";")
         #output.write(str(final_stddev_deltas[n_angles_second_prediction]) + ";")
+        for err in errors_dict[n_angles_second_prediction]:
+            output.write(str(err) + ";")
         output.write(str(final_errors_ratios[n_angles_second_prediction]) + ";")
         output.write(str(final_stddev_ratios[n_angles_second_prediction]) + "\n")
