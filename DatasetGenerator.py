@@ -740,9 +740,16 @@ def second_recursion(type, angles):
         pesos_without_friction_first, pesos_without_friction_second = calculate_pesos(deltas_theta1[1:],
                                                                                       deltas_theta2[1:])
 
-        # friction applied in the deltas
-        deltas_friction_theta1 = [p * (1.0 - friction) for p in deltas_theta1[1:]]
-        deltas_friction_theta2 = [p * (1.0 - friction) for p in deltas_theta2[1:]]
+        # friction applied in the deltas (simple)
+        #deltas_friction_theta1 = [p * (1.0 - friction) for p in deltas_theta1[1:]]
+        #deltas_friction_theta2 = [p * (1.0 - friction) for p in deltas_theta2[1:]]
+
+        # friction applied in the deltas (crescent)
+        factors = list(np.linspace(0.0, 1.0, len(deltas_theta1[1:])))
+        deltas_friction_theta1 = [deltas_theta1[1:][i] * (1.0 - (friction * factors[i])) for i in
+                                  range(len(deltas_theta1[1:]))]
+        deltas_friction_theta2 = [deltas_theta2[1:][i] * (1.0 - (friction * factors[i])) for i in
+                                  range(len(deltas_theta2[1:]))]
 
         # calculate weights that predict the deltas with friction
         pesos_with_friction_first, pesos_with_friction_second = calculate_pesos(deltas_friction_theta1,

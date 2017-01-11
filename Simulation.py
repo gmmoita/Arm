@@ -355,9 +355,14 @@ deltas_theta1,deltas_theta2 = convert_deltas(trajectory_theta1),convert_deltas(t
 #calculate weights that predict the deltas without friction
 pesos_without_friction_first,pesos_without_friction_second = calculate_pesos(deltas_theta1[1:],deltas_theta2[1:])
 
-#friction applied in the deltas
-deltas_friction_theta1 = [p*(1.0 - friction) for p in deltas_theta1[1:]]
-deltas_friction_theta2 = [p*(1.0 - friction) for p in deltas_theta2[1:]]
+#friction applied in the deltas (simple)
+#deltas_friction_theta1 = [p*(1.0 - friction) for p in deltas_theta1[1:]]
+#deltas_friction_theta2 = [p*(1.0 - friction) for p in deltas_theta2[1:]]
+
+#friction applied in the deltas (crescent)
+factors = list(np.linspace(0.0,1.0,len(deltas_theta1[1:])))
+deltas_friction_theta1 = [deltas_theta1[1:][i]*(1.0 - (friction*factors[i])) for i in range(len(deltas_theta1[1:]))]
+deltas_friction_theta2 = [deltas_theta2[1:][i]*(1.0 - (friction*factors[i])) for i in range(len(deltas_theta2[1:]))]
 
 #calculate weights that predict the deltas with friction
 pesos_with_friction_first,pesos_with_friction_second = calculate_pesos(deltas_friction_theta1,deltas_friction_theta2)
@@ -377,9 +382,9 @@ pesos_trajectory_with_friction_first,pesos_trajectory_with_friction_second = cal
 second_prediction_angles = random.sample([x / 100.0 for x in range(-6500, 6500)], n_angles_second_prediction)
 second_prediction_angles.sort()
 
-print angle
+#print angle
 
-print second_prediction_angles
+#print second_prediction_angles
 
 #execute second regression
 second_recursion_first, second_recursion_second = second_recursion(correction, second_prediction_angles)
@@ -389,6 +394,7 @@ pesos_first = apply_correction(pesos_trajectory_with_friction_first, second_recu
 pesos_second = apply_correction(pesos_trajectory_with_friction_second, second_recursion_second, correction, angle)
 
 #define what weights will be used
+#pesos_first, pesos_second = pesos_trajectory_with_friction_first,pesos_trajectory_with_friction_second
 #pesos_first, pesos_second = pesos_trajectory_without_friction_first,pesos_trajectory_without_friction_second
 
 
