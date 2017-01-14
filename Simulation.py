@@ -22,6 +22,7 @@ n_angles_second_prediction = 100
 correction = "ratios"
 pi = math.pi
 mode = "weights_angles"
+friction_type = "inv_sigmoid"
 
 def bezier(p, n):
     t = np.linspace(0, 1, n)
@@ -356,11 +357,23 @@ deltas_theta1,deltas_theta2 = convert_deltas(trajectory_theta1),convert_deltas(t
 pesos_without_friction_first,pesos_without_friction_second = calculate_pesos(deltas_theta1[1:],deltas_theta2[1:])
 
 #friction applied in the deltas (simple)
-#deltas_friction_theta1 = [p*(1.0 - friction) for p in deltas_theta1[1:]]
-#deltas_friction_theta2 = [p*(1.0 - friction) for p in deltas_theta2[1:]]
-
-#friction applied in the deltas (crescent)
-factors = list(np.linspace(0.0,1.0,len(deltas_theta1[1:])))
+if friction_type == "simple":
+    factors = [1]*len(deltas_theta1[1:])
+#friction applied in the deltas
+#1 - Linear
+if friction_type == "linear":
+    factors = list(np.linspace(0.0,1.0,len(deltas_theta1[1:])))
+#2 - Sigmoid
+elif friction_type == "sigmoid":
+    factors = calc_steps_sigmoid([0.0,0.0],[1.0,1.0])[0]
+#3 - Inverse Sigmoid
+elif friction_type == "inv_sigmoid":
+    factors = calc_steps_sigmoid([0.0,0.0],[1.0,1.0])[0]
+    factors = list(reversed(factors))
+#no friction
+else:
+    factors = [0]*len(deltas_theta1[1:])
+#applying friction
 deltas_friction_theta1 = [deltas_theta1[1:][i]*(1.0 - (friction*factors[i])) for i in range(len(deltas_theta1[1:]))]
 deltas_friction_theta2 = [deltas_theta2[1:][i]*(1.0 - (friction*factors[i])) for i in range(len(deltas_theta2[1:]))]
 
@@ -387,13 +400,13 @@ second_prediction_angles.sort()
 #print second_prediction_angles
 
 #execute second regression
-second_recursion_first, second_recursion_second = second_recursion(correction, second_prediction_angles)
+second_recursion_first, second_recursion_second = second_recursion(correction, second_prediction_angles, friction_type)
 
 #apply correction
 pesos_first = apply_correction(pesos_trajectory_with_friction_first, second_recursion_first, correction, angle)
 pesos_second = apply_correction(pesos_trajectory_with_friction_second, second_recursion_second, correction, angle)
 
-#define what weights will be used
+#define what weights will be used (to not use the corrected ones)
 #pesos_first, pesos_second = pesos_trajectory_with_friction_first,pesos_trajectory_with_friction_second
 #pesos_first, pesos_second = pesos_trajectory_without_friction_first,pesos_trajectory_without_friction_second
 

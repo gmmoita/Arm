@@ -683,7 +683,7 @@ with open("regression2_weights.csv",'wb') as file:
     file.close()'''
 
 
-def second_recursion(type, angles):
+def second_recursion(type, angles, friction_type):
 
     trajectory_normal_joint1 = [[], [], [], [], [], [], []]
     trajectory_normal_joint2 = [[], [], [], [], [], [], []]
@@ -741,11 +741,23 @@ def second_recursion(type, angles):
                                                                                       deltas_theta2[1:])
 
         # friction applied in the deltas (simple)
-        #deltas_friction_theta1 = [p * (1.0 - friction) for p in deltas_theta1[1:]]
-        #deltas_friction_theta2 = [p * (1.0 - friction) for p in deltas_theta2[1:]]
-
-        # friction applied in the deltas (crescent)
-        factors = list(np.linspace(0.0, 1.0, len(deltas_theta1[1:])))
+        if friction_type == "simple":
+            factors = [1] * len(deltas_theta1[1:])
+        # friction applied in the deltas
+        # 1 - Linear
+        if friction_type == "linear":
+            factors = list(np.linspace(0.0, 1.0, len(deltas_theta1[1:])))
+        # 2 - Sigmoid
+        elif friction_type == "sigmoid":
+            factors = calc_steps_sigmoid([0.0, 0.0], [1.0, 1.0])[0]
+        # 3 - Inverse Sigmoid
+        elif friction_type == "inv_sigmoid":
+            factors = calc_steps_sigmoid([0.0, 0.0], [1.0, 1.0])[0]
+            factors = list(reversed(factors))
+        # no friction
+        else:
+            factors = [0] * len(deltas_theta1[1:])
+        # applying friction
         deltas_friction_theta1 = [deltas_theta1[1:][i] * (1.0 - (friction * factors[i])) for i in
                                   range(len(deltas_theta1[1:]))]
         deltas_friction_theta2 = [deltas_theta2[1:][i] * (1.0 - (friction * factors[i])) for i in

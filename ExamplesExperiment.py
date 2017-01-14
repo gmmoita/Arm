@@ -21,6 +21,7 @@ total_steps = 200
 friction = 0.3 #value between 0 and 1
 pi = math.pi
 mode = "weights_angles"
+friction_type = "inv_sigmoid"
 
 def stddev(data):
     """Calculates the population standard deviation."""
@@ -536,7 +537,7 @@ for i in range(0,n_times):
         second_prediction_angles = random.sample([x / 1.0 for x in range(-65, 65)], n_angles_second_prediction)
         second_prediction_angles.sort()
         # execute second regression
-        second_recursion_first, second_recursion_second = second_recursion(correction, second_prediction_angles)
+        second_recursion_first, second_recursion_second = second_recursion(correction, second_prediction_angles, friction_type)
 
         #exhaustive test
         acc_error = 0
@@ -584,11 +585,23 @@ for i in range(0,n_times):
                                                                                           deltas_theta2[1:])
 
             # friction applied in the deltas (simple)
-            # deltas_friction_theta1 = [p*(1.0 - friction) for p in deltas_theta1[1:]]
-            # deltas_friction_theta2 = [p*(1.0 - friction) for p in deltas_theta2[1:]]
-
-            # friction applied in the deltas (crescent)
-            factors = list(np.linspace(0.0, 1.0, len(deltas_theta1[1:])))
+            if friction_type == "simple":
+                factors = [1] * len(deltas_theta1[1:])
+            # friction applied in the deltas
+            # 1 - Linear
+            if friction_type == "linear":
+                factors = list(np.linspace(0.0, 1.0, len(deltas_theta1[1:])))
+            # 2 - Sigmoid
+            elif friction_type == "sigmoid":
+                factors = calc_steps_sigmoid([0.0, 0.0], [1.0, 1.0])[0]
+            # 3 - Inverse Sigmoid
+            elif friction_type == "inv_sigmoid":
+                factors = calc_steps_sigmoid([0.0, 0.0], [1.0, 1.0])[0]
+                factors = list(reversed(factors))
+            # no friction
+            else:
+                factors = [0] * len(deltas_theta1[1:])
+            # applying friction
             deltas_friction_theta1 = [deltas_theta1[1:][i] * (1.0 - (friction * factors[i])) for i in
                                       range(len(deltas_theta1[1:]))]
             deltas_friction_theta2 = [deltas_theta2[1:][i] * (1.0 - (friction * factors[i])) for i in
@@ -634,7 +647,7 @@ for n_angles_second_prediction in num_examples:
 
 
 #writing in archive
-with open("newfriction_allerrors_experiment_results_ratios_only.csv","wb") as output:
+with open("invsig_friction_allerrors_experiment_results_ratios_only.csv","wb") as output:
     #output.write("angle;error_average_deltas;error_stddev_deltas;error_average_ratios;error_stddev_ratios\n")
     output.write("#examples;")
     for i in range(len(errors_dict[num_examples[0]])):
