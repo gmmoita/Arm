@@ -14,7 +14,7 @@ import Arm
 import Ball
 
 #angle = random.uniform(-65.0,+65.0)
-angle = -65
+angle = 65
 yf = 400.0
 total_steps = 200
 friction = 0.3 #value between 0 and 1
@@ -89,7 +89,7 @@ def normalize(value, oldmin, oldmax, newmin, newmax):
 
 def calc_distance(x,y):
 
-    d = x**2 + y**2
+    d = np.sqrt(((x[0]-y[0])**2)  +((x[1]-y[1])**2))
 
     return d
 
@@ -250,8 +250,7 @@ class Simulation(pyglet.window.Window):
             arm_xy = arm.get_xy(arm.q)
             arm_xy = (arm_xy[0] + (window.width / 2), arm_xy[1])
             ball_xy = [ball.xf,ball.yf]
-            error = np.sqrt((np.array(ball_xy) - np.array(arm_xy)) ** 2)
-            distance = calc_distance(error[0],error[1])
+            distance = calc_distance(ball_xy,arm_xy)
             print distance
         label.draw()
         pyglet.graphics.draw(4, pyglet.gl.GL_QUADS,
@@ -392,7 +391,8 @@ pesos_trajectory_with_friction_first,pesos_trajectory_with_friction_second = cal
 #second_prediction_angles = [((-65.0) + (i*space)) for i in range(n_angles_second_prediction)]
 
 #randomly generated
-second_prediction_angles = random.sample([x / 100.0 for x in range(-6500, 6500)], n_angles_second_prediction)
+#second_prediction_angles = random.sample([x / 100.0 for x in range(-6500, 6500)], n_angles_second_prediction)
+second_prediction_angles = [random.uniform(-65,65) for i in xrange(n_angles_second_prediction)]
 second_prediction_angles.sort()
 
 #print angle

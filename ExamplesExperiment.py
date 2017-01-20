@@ -97,7 +97,7 @@ def normalize(value, oldmin, oldmax, newmin, newmax):
 
 def calc_distance(x,y):
 
-    d = x**2 + y**2
+    d = np.sqrt(((x[0]-y[0])**2)  +((x[1]-y[1])**2))
 
     return d
 
@@ -260,8 +260,7 @@ class PseudoSimulation():
             arm_xy = arm.get_xy(arm.q)
             arm_xy = (arm_xy[0] + (window.width / 2), arm_xy[1])
             ball_xy = [ball.xf,ball.yf]
-            error = np.sqrt((np.array(ball_xy) - np.array(arm_xy)) ** 2)
-            distance = calc_distance(error[0],error[1])
+            distance = calc_distance(ball_xy, arm_xy)
             print distance
         label.draw()
         pyglet.graphics.draw(4, pyglet.gl.GL_QUADS,
@@ -631,8 +630,7 @@ for i in range(0,n_times):
             final_angles = angles_function((total_steps - 1), mode)
             arm_xy = arm.get_xy(final_angles)
             arm_xy = (arm_xy[0] + (window.width / 2), arm_xy[1])
-            error = np.sqrt((np.array(ball_xy) - np.array(arm_xy)) ** 2)
-            distance = calc_distance(error[0], error[1])
+            distance = calc_distance(ball_xy, arm_xy)
 
             acc_error += distance
 
